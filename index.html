@@ -1132,11 +1132,12 @@ function DraftBoard() {
             const isExp = expanded===p.name;
             const posColor = PC[p.pos];
             const posBg = PC_BG[p.pos];
+            const rowBg = isExp?'#111827':clockMode&&watch.has(p.name)?'#1a1400':'#080c14';
             return (
               <React.Fragment key={p.name}>
                 <tr onClick={()=>setExpanded(isExp?null:p.name)}
-                  style={{borderBottom:'1px solid #0f1825',cursor:'pointer',background:isExp?'#111827':clockMode&&watch.has(p.name)?'#1a1400':'transparent',outline:clockMode&&watch.has(p.name)?'1px solid #f59e0b44':undefined}}>
-                  <td style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:'transparent'}}>
+                  style={{borderBottom:'1px solid #0f1825',cursor:'pointer',background:rowBg,outline:clockMode&&watch.has(p.name)?'1px solid #f59e0b44':undefined}}>
+                  <td style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:rowBg}}>
                       {/* Action pill buttons */}
                       <div style={{display:'flex',flexDirection:'row',gap:4}}>
                         <span onClick={e=>toggleMine(p.name,e)}
@@ -1159,7 +1160,7 @@ function DraftBoard() {
                             color:gone.has(p.name)?'#ef4444':'#fca5a5'}}>GONE</span>
                       </div>
                   </td>
-                  <td style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:170,zIndex:10,background:'transparent'}}>
+                  <td style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:170,zIndex:10,background:rowBg}}>
                       <div style={{fontSize:13,fontWeight:700,color:'#f1f5f9',display:'flex',alignItems:'center',gap:6,lineHeight:1.2}}>
                         <span style={{wordBreak:'break-word',lineHeight:1.3}}>{clockMode&&watch.has(p.name)&&<span style={{color:'#fbbf24',marginRight:3,fontSize:11}}>★</span>}{p.name}</span>
                       </div>
