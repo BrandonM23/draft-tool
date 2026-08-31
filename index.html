@@ -19,6 +19,15 @@
     }
     @media (max-width: 679px) {
       .frozen-col { position: static !important; left: auto !important; }
+      .drafted-gone-stack { flex-direction: column !important; }
+      .col-status { width: 85px !important; }
+      .col-player { width: 90px !important; }
+      .col-team { width: 34px !important; }
+      .col-injury { width: 46px !important; }
+      .col-value { width: 60px !important; }
+      .col-ppg { width: 40px !important; }
+      .col-adp { width: 36px !important; }
+      table td, table th { white-space: normal !important; }
     }
   </style>
 </head>
@@ -1036,7 +1045,7 @@ function DraftBoard() {
                 border:`1px solid ${filterWatch?"#f59e0b":"#2d3f5a"}`,
                 color:filterWatch?"#fbbf24":"#94a3b8",
                 borderRadius:6,padding:"7px 4px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
-              }}>◈ WATCH{watch.size>0?` (${watch.size})`:""}</button>
+              }}>◈ FAV{watch.size>0?` (${watch.size})`:""}</button>
               <button onClick={()=>setFilterGone(!filterGone)} style={{
                 flex:1,background:filterGone?"#2d0a0a":"#131c2e",
                 border:`1px solid ${filterGone?"#ef4444":"#2d3f5a"}`,
@@ -1089,13 +1098,13 @@ function DraftBoard() {
           <div style={{overflowX:"auto",overflowY:"auto",WebkitOverflowScrolling:"touch",height:"calc(100vh - 280px)"}}>
             <table style={{borderCollapse:"collapse",width:"100%",maxWidth:1500,margin:"0 auto",tableLayout:"fixed",fontFamily:"inherit"}}>
               <colgroup>
-                <col style={{width:170}}/>
-                <col style={{width:190}}/>
-                <col style={{width:70}}/>
-                <col style={{width:100}}/>
-                <col style={{width:120}}/>
-                <col style={{width:70}}/>
-                <col style={{width:65}}/>
+                <col className="col-status" style={{width:170}}/>
+                <col className="col-player" style={{width:190}}/>
+                <col className="col-team" style={{width:70}}/>
+                <col className="col-injury" style={{width:100}}/>
+                <col className="col-value" style={{width:120}}/>
+                <col className="col-ppg" style={{width:70}}/>
+                <col className="col-adp" style={{width:65}}/>
                 <col style={{width:75}}/>
               </colgroup>
               <thead style={{position:"sticky",top:0,zIndex:20,background:"#0b1120"}}>
@@ -1124,7 +1133,7 @@ function DraftBoard() {
                 <td colSpan={8} style={{padding:'0'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8,padding:'10px 12px 6px',background:'#0b1120'}}>
                     <div style={{flex:1,height:'1px',background:'#1e293b'}} />
-                    <span style={{fontSize:9,fontWeight:800,letterSpacing:'0.15em',color:'#94a3b8',whiteSpace:'nowrap'}}>
+                    <span style={{fontSize:12,fontWeight:800,letterSpacing:'0.1em',color:'#94a3b8',whiteSpace:'nowrap'}}>
                       TIER {p.tierNum} · {p.adpRange} · ~{p.ppg.toFixed(1)} PPG
                     </span>
                     <div style={{flex:1,height:'1px',background:'#1e293b'}} />
@@ -1143,18 +1152,20 @@ function DraftBoard() {
                   <td className="frozen-col" style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:rowBg}}>
                       {/* Action pill buttons */}
                       <div style={{display:'flex',flexDirection:'row',gap:4}}>
-                        <span onClick={e=>toggleMine(p.name,e)}
-                          title="Mark as drafted"
-                          style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
-                            background:myPicks.has(p.name)?'#052e16':'transparent',
-                            border:`1.5px solid ${myPicks.has(p.name)?'#22c55e':'#16a34a'}`,
-                            color:myPicks.has(p.name)?'#22c55e':'#86efac'}}>DRAFTED</span>
-                        <span onClick={e=>toggleGone(p.name,e)}
-                          title="Mark off the board"
-                          style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
-                            background:gone.has(p.name)?'#2d0a0a':'transparent',
-                            border:`1.5px solid ${gone.has(p.name)?'#ef4444':'#dc2626'}`,
-                            color:gone.has(p.name)?'#ef4444':'#fca5a5'}}>GONE</span>
+                        <div className="drafted-gone-stack" style={{display:'flex',flexDirection:'row',gap:4,flex:'2 1 0'}}>
+                          <span onClick={e=>toggleMine(p.name,e)}
+                            title="Mark as drafted"
+                            style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
+                              background:myPicks.has(p.name)?'#052e16':'transparent',
+                              border:`1.5px solid ${myPicks.has(p.name)?'#22c55e':'#16a34a'}`,
+                              color:myPicks.has(p.name)?'#22c55e':'#86efac'}}>DRAFTED</span>
+                          <span onClick={e=>toggleGone(p.name,e)}
+                            title="Mark off the board"
+                            style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
+                              background:gone.has(p.name)?'#2d0a0a':'transparent',
+                              border:`1.5px solid ${gone.has(p.name)?'#ef4444':'#dc2626'}`,
+                              color:gone.has(p.name)?'#ef4444':'#fca5a5'}}>GONE</span>
+                        </div>
                         <span onClick={e=>toggleWatch(p.name,e)}
                           title="Add to watch list"
                           style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
