@@ -17,16 +17,20 @@
     @media (min-width: 680px) {
       #root { zoom: 1.05; }
     }
+    .label-icon { display: none; }
     @media (max-width: 679px) {
       .frozen-col { position: static !important; left: auto !important; }
-      .drafted-gone-stack { flex-direction: column !important; }
-      .col-status { width: 85px !important; }
-      .col-player { width: 90px !important; }
+      .label-full { display: none !important; }
+      .label-icon { display: inline !important; font-size: 12px !important; }
+      .col-status { width: 68px !important; }
+      .col-player { width: 92px !important; }
       .col-team { width: 34px !important; }
-      .col-injury { width: 46px !important; }
-      .col-value { width: 60px !important; }
-      .col-ppg { width: 40px !important; }
-      .col-adp { width: 36px !important; }
+      .col-injury { width: 44px !important; }
+      .col-value { width: 56px !important; }
+      .col-ppg { width: 50px !important; }
+      .col-adp { width: 46px !important; }
+      .cell-ppg, .cell-adp { padding: 8px 4px !important; }
+      .cell-ppg span { font-size: 13px !important; }
       table td, table th { white-space: normal !important; }
     }
   </style>
@@ -1111,9 +1115,9 @@ function DraftBoard() {
                 <tr>
                   <th className="frozen-col" style={{padding:"9px 10px",fontSize:10,color:"#94a3b8",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:0,zIndex:30,background:"#0b1120"}}>
                     <div style={{display:"flex",gap:4}}>
-                      <span style={{flex:"1 1 0",textAlign:"center"}}>DRAFTED</span>
-                      <span style={{flex:"1 1 0",textAlign:"center"}}>GONE</span>
-                      <span style={{flex:"1 1 0",textAlign:"center"}}>FAV</span>
+                      <span style={{flex:"1 1 0",textAlign:"center"}}><span className="label-full">DRAFTED</span><span className="label-icon">✓</span></span>
+                      <span style={{flex:"1 1 0",textAlign:"center"}}><span className="label-full">GONE</span><span className="label-icon">✕</span></span>
+                      <span style={{flex:"1 1 0",textAlign:"center"}}><span className="label-full">FAV</span><span className="label-icon">★</span></span>
                     </div>
                   </th>
                   <th className="frozen-col" style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:170,zIndex:30,background:"#0b1120"}}>PLAYER</th>
@@ -1152,26 +1156,24 @@ function DraftBoard() {
                   <td className="frozen-col" style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:rowBg}}>
                       {/* Action pill buttons */}
                       <div style={{display:'flex',flexDirection:'row',gap:4}}>
-                        <div className="drafted-gone-stack" style={{display:'flex',flexDirection:'row',gap:4,flex:'2 1 0'}}>
-                          <span onClick={e=>toggleMine(p.name,e)}
-                            title="Mark as drafted"
-                            style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
-                              background:myPicks.has(p.name)?'#052e16':'transparent',
-                              border:`1.5px solid ${myPicks.has(p.name)?'#22c55e':'#16a34a'}`,
-                              color:myPicks.has(p.name)?'#22c55e':'#86efac'}}>DRAFTED</span>
-                          <span onClick={e=>toggleGone(p.name,e)}
-                            title="Mark off the board"
-                            style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
-                              background:gone.has(p.name)?'#2d0a0a':'transparent',
-                              border:`1.5px solid ${gone.has(p.name)?'#ef4444':'#dc2626'}`,
-                              color:gone.has(p.name)?'#ef4444':'#fca5a5'}}>GONE</span>
-                        </div>
+                        <span onClick={e=>toggleMine(p.name,e)}
+                          title="Mark as drafted"
+                          style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
+                            background:myPicks.has(p.name)?'#052e16':'transparent',
+                            border:`1.5px solid ${myPicks.has(p.name)?'#22c55e':'#16a34a'}`,
+                            color:myPicks.has(p.name)?'#22c55e':'#86efac'}}><span className="label-full">DRAFTED</span><span className="label-icon">✓</span></span>
+                        <span onClick={e=>toggleGone(p.name,e)}
+                          title="Mark off the board"
+                          style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
+                            background:gone.has(p.name)?'#2d0a0a':'transparent',
+                            border:`1.5px solid ${gone.has(p.name)?'#ef4444':'#dc2626'}`,
+                            color:gone.has(p.name)?'#ef4444':'#fca5a5'}}><span className="label-full">GONE</span><span className="label-icon">✕</span></span>
                         <span onClick={e=>toggleWatch(p.name,e)}
                           title="Add to watch list"
                           style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
                             background:watch.has(p.name)?'#1c1205':'transparent',
                             border:`1.5px solid ${watch.has(p.name)?'#f59e0b':'#d97706'}`,
-                            color:watch.has(p.name)?'#fbbf24':'#fde68a'}}>FAV</span>
+                            color:watch.has(p.name)?'#fbbf24':'#fde68a'}}><span className="label-full">FAV</span><span className="label-icon">★</span></span>
                       </div>
                   </td>
                   <td className="frozen-col" style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:170,zIndex:10,background:rowBg}}>
@@ -1193,10 +1195,10 @@ function DraftBoard() {
                   <td style={{padding:'10px',verticalAlign:'middle'}}>
                     <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:'2px 6px',borderRadius:4,border:`1px solid ${p.value.color}55`,whiteSpace:'nowrap'}}>{p.value.label}</span>
                   </td>
-                  <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',whiteSpace:'nowrap'}}>
+                  <td className="cell-ppg" style={{padding:'10px',textAlign:'right',verticalAlign:'middle',whiteSpace:'nowrap'}}>
                     <span style={{fontSize:15,fontWeight:800,color:posColor}}>{p.ppg}</span>
                   </td>
-                  <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',fontSize:12,color:'#94a3b8',fontWeight:600,whiteSpace:'nowrap'}}>{fmtADP(p.adp)}</td>
+                  <td className="cell-adp" style={{padding:'10px',textAlign:'right',verticalAlign:'middle',fontSize:12,color:'#94a3b8',fontWeight:600,whiteSpace:'nowrap'}}>{fmtADP(p.adp)}</td>
                   <td style={{padding:'10px',textAlign:'center',verticalAlign:'middle',fontSize:11,color:'#94a3b8',fontWeight:600,whiteSpace:'nowrap'}}>
                     {p.tierNum ? <span style={{background:'#1e293b',color:'#94a3b8',fontSize:9,fontWeight:800,padding:'2px 7px',borderRadius:10,border:'1px solid #334155',letterSpacing:'0.05em'}}>T{p.tierNum}</span> : '—'}
                   </td>
