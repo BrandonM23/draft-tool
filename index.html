@@ -1020,33 +1020,31 @@ function DraftBoard() {
               ))}
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              <div style={{display:"flex",gap:4,flex:1}}>
-                {[["ppg","PPG"],["adp","ADP"]].map(([v,l])=>(
-                  <button key={v} onClick={()=>setSortBy(v)} style={{
-                    flex:1,background:sortBy===v?"#1e293b":"#131c2e",
-                    border:`1px solid ${sortBy===v?"#4f6380":"#2d3f5a"}`,
-                    color:sortBy===v?"#e2e8f0":"#94a3b8",
-                    borderRadius:6,padding:"7px 4px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:sortBy===v?700:400
-                  }}>↕ {l}</button>
-                ))}
-              </div>
+              {[["ppg","PPG"],["adp","ADP"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setSortBy(v)} style={{
+                  flex:1,background:sortBy===v?"#1e293b":"#131c2e",
+                  border:`1px solid ${sortBy===v?"#4f6380":"#2d3f5a"}`,
+                  color:sortBy===v?"#e2e8f0":"#94a3b8",
+                  borderRadius:6,padding:"7px 4px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:sortBy===v?700:400,whiteSpace:"nowrap"
+                }}>{l}</button>
+              ))}
               <button onClick={()=>setFilterWatch(!filterWatch)} style={{
-                background:filterWatch?"#1c1205":"#131c2e",
+                flex:1,background:filterWatch?"#1c1205":"#131c2e",
                 border:`1px solid ${filterWatch?"#f59e0b":"#2d3f5a"}`,
                 color:filterWatch?"#fbbf24":"#94a3b8",
-                borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
+                borderRadius:6,padding:"7px 4px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
               }}>◈ WATCH{watch.size>0?` (${watch.size})`:""}</button>
               <button onClick={()=>setFilterGone(!filterGone)} style={{
-                background:filterGone?"#2d0a0a":"#131c2e",
+                flex:1,background:filterGone?"#2d0a0a":"#131c2e",
                 border:`1px solid ${filterGone?"#ef4444":"#2d3f5a"}`,
                 color:filterGone?"#fca5a5":"#94a3b8",
-                borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
+                borderRadius:6,padding:"7px 4px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
               }}>✕ GONE{(gone.size+myPicks.size)>0?` (${gone.size+myPicks.size})`:""}</button>
               <button onClick={()=>setClockMode(!clockMode)} style={{
-                background:clockMode?"#0c1a0c":"#131c2e",
+                flex:1,background:clockMode?"#0c1a0c":"#131c2e",
                 border:`1px solid ${clockMode?"#22c55e":"#2d3f5a"}`,
                 color:clockMode?"#4ade80":"#94a3b8",
-                borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"
+                borderRadius:6,padding:"7px 4px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"
               }}>⏱ CLOCK</button>
             </div>
           </div>
@@ -1086,16 +1084,16 @@ function DraftBoard() {
 
           {/* TABLE */}
           <div style={{overflowX:"auto",overflowY:"auto",WebkitOverflowScrolling:"touch",height:"calc(100vh - 280px)"}}>
-            <table style={{borderCollapse:"collapse",width:"100%",tableLayout:"fixed",fontFamily:"inherit"}}>
+            <table style={{borderCollapse:"collapse",width:"100%",maxWidth:1500,margin:"0 auto",tableLayout:"fixed",fontFamily:"inherit"}}>
               <colgroup>
                 <col style={{width:170}}/>
-                <col style={{width:380}}/>
-                <col style={{width:55}}/>
-                <col style={{width:90}}/>
+                <col style={{width:190}}/>
+                <col style={{width:70}}/>
                 <col style={{width:100}}/>
-                <col style={{width:55}}/>
-                <col style={{width:50}}/>
-                <col style={{width:60}}/>
+                <col style={{width:120}}/>
+                <col style={{width:70}}/>
+                <col style={{width:65}}/>
+                <col style={{width:75}}/>
               </colgroup>
               <thead style={{position:"sticky",top:0,zIndex:20,background:"#0b1120"}}>
                 <tr>
