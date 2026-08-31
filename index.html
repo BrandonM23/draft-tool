@@ -833,6 +833,7 @@ function calcBlendedPPG(player) {
   const curvePPG   = adpCurve(player.adp, player.pos);
   const staticPPG  = CONSENSUS_PPG[player.name] ?? null;
   const consensusPPG = staticPPG ?? curvePPG;
+  const evPPG = calcEVPPG(player);
   // Injury PPG multiplier: context-aware scaling based on note content, not just severity tier
   // Low/monitor flags assumed already priced into consensus — no additional haircut
   let injuryMult = 1.0;
@@ -862,9 +863,10 @@ function calcBlendedPPG(player) {
       injuryMult = 0.88; games = 15;
     }
   }
-  const blended = consensusPPG * injuryMult;
+  const base = evPPG != null ? (consensusPPG * 0.60) + (evPPG * 0.40) : consensusPPG;
+  const blended = base * injuryMult;
   const ppg = Math.round(blended * 10) / 10;
-  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round(vegasPPG*10)/10, consensusPPG: Math.round(consensusPPG*10)/10 };
+  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round(vegasPPG*10)/10, consensusPPG: Math.round(consensusPPG*10)/10, evPPG };
 }
 
 function getTier(pos, ppg) {
@@ -953,8 +955,8 @@ function DraftBoard() {
         return p.vegas && ((p.vegas.rec_yds||0)+(p.vegas.pass_yds||0)+(p.vegas.rush_yds||0)>0);
       })
       .map(p => {
-        const {ppg,season,games,vegasPPG,consensusPPG} = calcBlendedPPG(p);
-        return {...p,ppg,season,games,vegasPPG,consensusPPG,evPPG:calcEVPPG(p),tier:getTier(p.pos,ppg),value:getValue(ppg,p.adp,p.pos)};
+        const {ppg,season,games,vegasPPG,consensusPPG,evPPG} = calcBlendedPPG(p);
+        return {...p,ppg,season,games,vegasPPG,consensusPPG,evPPG,tier:getTier(p.pos,ppg),value:getValue(ppg,p.adp,p.pos)};
       });
   },[]);
 

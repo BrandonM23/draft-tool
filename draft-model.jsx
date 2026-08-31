@@ -3,6 +3,85 @@ import React, { useState, useMemo, useRef, useCallback } from "react";
 // Vegas lines: DraftKings primary (Aug 2026). ADP from Rotoworld/FantasyEdge consensus Aug 26 2026.
 // Half-PPR: 0.1/rush_yd, 0.1/rec_yd, 0.5/rec, 6/rush_td, 6/rec_td, 25 pass yds/pt, 6/pass_td
 
+
+// ─── EV MODEL DATA (Vegas implied × target share × positional coefficients) ───
+// Vegas team implied points per game — FirstDown Studio, Aug 30 2026
+const TEAM_IMPLIED = {
+  "LA":26.6,"BUF":26.1,"DET":26.1,"CIN":26.0,"BAL":25.9,"DAL":25.7,
+  "SF":25.1,"GB":24.7,"SEA":24.7,"CHI":24.6,"KC":24.1,"NE":23.8,
+  "PHI":23.8,"LAC":23.8,"JAC":23.4,"WAS":23.4,"IND":23.4,"TB":23.3,
+  "MIN":22.5,"HOU":22.5,"DEN":22.3,"NYG":22.1,"NO":21.5,"PIT":21.4,
+  "ATL":21.1,"CAR":20.8,"TEN":20.6,"LV":19.2,"MIA":19.0,"CLE":18.7,
+  "ARI":18.5,"NYJ":18.4
+};
+// Team pass attempts per game (2025 actuals, projected similar 2026)
+const TEAM_PASS_ATT = {
+  "LA":38,"BUF":36,"DET":36,"CIN":38,"BAL":34,"DAL":36,
+  "SF":34,"GB":34,"SEA":28,"CHI":32,"KC":34,"NE":34,
+  "PHI":32,"LAC":36,"JAC":34,"WAS":34,"IND":34,"TB":34,
+  "MIN":34,"HOU":34,"DEN":32,"NYG":34,"NO":30,"PIT":30,
+  "ATL":28,"CAR":30,"TEN":30,"LV":32,"MIA":30,"CLE":28,
+  "ARI":38,"NYJ":32
+};
+// 2025 target share (WR/TE) or targets per game (RB) from DraftSharks/nflverse
+const EV_TARGET_SHARE = {
+  "Ja\'Marr Chase":0.302,"Amon-Ra St. Brown":0.285,"Puka Nacua":0.288,
+  "Jaxon Smith-Njigba":0.339,"Trey McBride":0.254,"Chris Olave":0.272,
+  "Justin Jefferson":0.285,"Garrett Wilson":0.304,"Drake London":0.281,
+  "Zay Flowers":0.277,"A.J. Brown":0.275,"Rashee Rice":0.262,
+  "Malik Nabers":0.244,"DeVonta Smith":0.227,"Davante Adams":0.236,
+  "Nico Collins":0.231,"Tetairoa McMillan":0.231,"Courtland Sutton":0.220,
+  "Emeka Egbuka":0.228,"CeeDee Lamb":0.220,"Terry McLaurin":0.210,
+  "DK Metcalf":0.215,"Ladd McConkey":0.225,"Jameson Williams":0.205,
+  "Marvin Harrison":0.195,"Brian Thomas":0.215,"George Pickens":0.210,
+  "Jaylen Waddle":0.190,"Tee Higgins":0.210,"Luther Burden":0.195,
+  "Jordan Addison":0.200,"Alec Pierce":0.195,"Adonai Mitchell":0.220,
+  "Brock Bowers":0.220,"Colston Loveland":0.185,"Tyler Warren":0.195,
+  "Kyle Pitts":0.180,"Harold Fannin Jr.":0.175,"Tucker Kraft":0.160,
+  "Sam LaPorta":0.175,"Dallas Goedert":0.165,"Travis Kelce":0.170,
+  "Jake Ferguson":0.160,"George Kittle":0.155,"Isaiah Likely":0.150,
+  "Mark Andrews":0.160,"Dalton Kincaid":0.165,
+  // RBs: targets per game
+  "Jahmyr Gibbs":5.5,"Bijan Robinson":4.8,"Christian McCaffrey":7.6,
+  "Jonathan Taylor":3.2,"De\'Von Achane":5.2,"James Cook":3.5,
+  "Saquon Barkley":4.0,"Derrick Henry":2.8,"Chase Brown":3.8,
+  "Kenneth Walker":3.2,"Omarion Hampton":3.0,"Ashton Jeanty":3.5,
+  "Breece Hall":4.5,"Josh Jacobs":3.8,"Javonte Williams":3.5,
+  "Kyren Williams":3.5,"Travis Etienne":4.0,"Jeremiyah Love":3.2,
+  "Bucky Irving":3.5,"Cam Skattebo":3.0,"Quinshon Judkins":3.2,
+  "Bhayshul Tuten":2.8,"TreVeyon Henderson":3.0,"Jaylen Warren":3.2,
+};
+// RB carry share of team rush attempts (~27/game avg)
+const EV_CARRY_SHARE = {
+  "Jahmyr Gibbs":0.62,"Bijan Robinson":0.58,"Christian McCaffrey":0.72,
+  "Jonathan Taylor":0.65,"De\'Von Achane":0.60,"James Cook":0.68,
+  "Saquon Barkley":0.65,"Derrick Henry":0.70,"Chase Brown":0.62,
+  "Kenneth Walker":0.62,"Omarion Hampton":0.60,"Ashton Jeanty":0.65,
+  "Breece Hall":0.58,"Josh Jacobs":0.62,"Javonte Williams":0.60,
+  "Kyren Williams":0.58,"Travis Etienne":0.55,"Jeremiyah Love":0.55,
+  "Bucky Irving":0.52,"Cam Skattebo":0.50,"Quinshon Judkins":0.50,
+  "Bhayshul Tuten":0.45,"TreVeyon Henderson":0.48,"Jaylen Warren":0.48,
+};
+
+function calcEVPPG(player) {
+  const { name, pos, team } = player;
+  const passAtt = TEAM_PASS_ATT[team] || 34;
+  if (pos === "WR" || pos === "TE") {
+    const ts = EV_TARGET_SHARE[name];
+    if (!ts) return null;
+    const coeff = pos === "TE" ? 1.44 : 1.39;
+    return Math.round(passAtt * ts * coeff * 10) / 10;
+  }
+  if (pos === "RB") {
+    const tpg = EV_TARGET_SHARE[name];
+    const cs  = EV_CARRY_SHARE[name];
+    if (!tpg || !cs) return null;
+    const carriesPG = 27 * cs;
+    return Math.round((carriesPG * 0.63 + tpg * 1.14) * 10) / 10;
+  }
+  return null;
+}
+
 const PLAYERS = [
   // ── QBs ──
   { name:"Josh Allen",          team:"BUF", pos:"QB", adp:30,
@@ -683,9 +762,11 @@ function calcBlendedPPG(player, liveData) {
       injuryMult = 0.88; games = 15;
     }
   }
-  const blended = consensusPPG * injuryMult;
+  const evPPG = calcEVPPG(player);
+  const base = evPPG != null ? (consensusPPG * 0.60) + (evPPG * 0.40) : consensusPPG;
+  const blended = base * injuryMult;
   const ppg = Math.round(blended * 10) / 10;
-  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round(vegasPPG*10)/10, consensusPPG: Math.round(consensusPPG*10)/10 };
+  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round((calcVegasPPG(player))*10)/10, consensusPPG: Math.round(consensusPPG*10)/10, evPPG };
 }
 
 function getTier(pos, ppg) {
@@ -1089,7 +1170,8 @@ Use the exact player names as provided. If you cannot find data for a player, om
                 <tr>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:0,zIndex:30,background:"#0b1120"}}>STATUS</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:80,zIndex:30,background:"#0b1120"}}>PLAYER</th>
-                  <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>PPG</th>
+                  <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#7c3aed",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>EV PPG</th>
+                  <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>CONS</th>
                   <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>ADP</th>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TIER</th>
                 </tr>
@@ -1099,7 +1181,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
             // Tier break divider row
             if (p.__tierBreak) return (
               <tr key={p.key}>
-                <td colSpan={5} style={{padding:'0'}}>
+                <td colSpan={6} style={{padding:'0'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8,padding:'10px 12px 6px',background:'#0b1120'}}>
                     <div style={{flex:1,height:'1px',background:'#1e293b'}} />
                     <span style={{fontSize:9,fontWeight:800,letterSpacing:'0.15em',color:'#475569',whiteSpace:'nowrap'}}>
@@ -1149,6 +1231,13 @@ Use the exact player names as provided. If you cannot find data for a player, om
                       </div>
                   </td>
                   <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',whiteSpace:'nowrap'}}>
+                    {p.evPPG != null
+                      ? <><div style={{fontSize:15,fontWeight:800,color:'#a78bfa'}}>{p.evPPG}</div>
+                          <div style={{fontSize:9,color:p.evPPG>p.ppg?'#4ade80':p.evPPG<p.ppg?'#f87171':'#475569'}}>{p.evPPG>p.ppg?'▲':p.evPPG<p.ppg?'▼':'='} cons</div></>
+                      : <div style={{fontSize:11,color:'#334155'}}>—</div>
+                    }
+                  </td>
+                  <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',whiteSpace:'nowrap'}}>
                     <span style={{fontSize:15,fontWeight:800,color:posColor}}>{p.ppg}</span>
                   </td>
                   <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',fontSize:12,color:'#475569',fontWeight:600,whiteSpace:'nowrap'}}>{fmtADP(p.adp)}</td>
@@ -1185,6 +1274,14 @@ Use the exact player names as provided. If you cannot find data for a player, om
                       </div>
                       <div style={{paddingTop:12,borderTop:'1px solid #1e293b'}}>
                         <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.12em',marginBottom:8,fontWeight:700}}>VALUE SIGNAL</div>
+                        {p.evPPG != null && (
+                          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'6px 10px',background:'#0d0d1f',borderRadius:6,border:'1px solid #3730a344'}}>
+                            <span style={{fontSize:9,color:'#7c3aed',fontWeight:700,letterSpacing:'0.1em'}}>EV MODEL</span>
+                            <span style={{fontSize:13,fontWeight:800,color:'#a78bfa'}}>{p.evPPG} PPG</span>
+                            <span style={{fontSize:9,color:'#475569'}}>Vegas implied × target share × positional coeff</span>
+                            <span style={{marginLeft:'auto',fontSize:11,fontWeight:700,color:p.evPPG>p.ppg?'#4ade80':p.evPPG<p.ppg?'#f87171':'#94a3b8'}}>{p.evPPG>p.ppg?`+${(p.evPPG-p.ppg).toFixed(1)} vs cons`:`${(p.evPPG-p.ppg).toFixed(1)} vs cons`}</span>
+                          </div>
+                        )}
                         <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginBottom:8}}>
                           <span style={{fontSize:12,color:'#cbd5e1'}}>Consensus: <span style={{color:'#f1f5f9',fontWeight:800}}>{p.ppg} PPG</span></span>
                           <span style={{color:'#64748b',fontSize:12}}>vs</span>
