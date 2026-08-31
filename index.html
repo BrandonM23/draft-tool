@@ -17,6 +17,9 @@
     @media (min-width: 680px) {
       #root { zoom: 1.05; }
     }
+    @media (max-width: 679px) {
+      .frozen-col { position: static !important; left: auto !important; }
+    }
   </style>
 </head>
 <body>
@@ -1097,14 +1100,14 @@ function DraftBoard() {
               </colgroup>
               <thead style={{position:"sticky",top:0,zIndex:20,background:"#0b1120"}}>
                 <tr>
-                  <th style={{padding:"9px 10px",fontSize:10,color:"#94a3b8",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:0,zIndex:30,background:"#0b1120"}}>
+                  <th className="frozen-col" style={{padding:"9px 10px",fontSize:10,color:"#94a3b8",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:0,zIndex:30,background:"#0b1120"}}>
                     <div style={{display:"flex",gap:4}}>
                       <span style={{flex:"1 1 0",textAlign:"center"}}>DRAFTED</span>
                       <span style={{flex:"1 1 0",textAlign:"center"}}>FAV</span>
                       <span style={{flex:"1 1 0",textAlign:"center"}}>GONE</span>
                     </div>
                   </th>
-                  <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:170,zIndex:30,background:"#0b1120"}}>PLAYER</th>
+                  <th className="frozen-col" style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:170,zIndex:30,background:"#0b1120"}}>PLAYER</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TEAM</th>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>INJURY</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>VALUE</th>
@@ -1137,7 +1140,7 @@ function DraftBoard() {
               <React.Fragment key={p.name}>
                 <tr onClick={()=>setExpanded(isExp?null:p.name)}
                   style={{borderBottom:'1px solid #0f1825',cursor:'pointer',background:rowBg,outline:clockMode&&watch.has(p.name)?'1px solid #f59e0b44':undefined}}>
-                  <td style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:rowBg}}>
+                  <td className="frozen-col" style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:rowBg}}>
                       {/* Action pill buttons */}
                       <div style={{display:'flex',flexDirection:'row',gap:4}}>
                         <span onClick={e=>toggleMine(p.name,e)}
@@ -1160,7 +1163,7 @@ function DraftBoard() {
                             color:gone.has(p.name)?'#ef4444':'#fca5a5'}}>GONE</span>
                       </div>
                   </td>
-                  <td style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:170,zIndex:10,background:rowBg}}>
+                  <td className="frozen-col" style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:170,zIndex:10,background:rowBg}}>
                       <div style={{fontSize:13,fontWeight:700,color:'#f1f5f9',display:'flex',alignItems:'center',gap:6,lineHeight:1.2}}>
                         <span style={{wordBreak:'break-word',lineHeight:1.3}}>{clockMode&&watch.has(p.name)&&<span style={{color:'#fbbf24',marginRight:3,fontSize:11}}>★</span>}{p.name}</span>
                       </div>
