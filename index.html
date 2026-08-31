@@ -18,7 +18,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-import React, { useState, useMemo, useRef, useCallback } from "react";
+const { useState, useMemo, useRef, useCallback } = React;
 
 // Vegas lines: DraftKings primary (Aug 2026). ADP from Rotoworld/FantasyEdge consensus Aug 26 2026.
 // Half-PPR: 0.1/rush_yd, 0.1/rec_yd, 0.5/rec, 6/rush_td, 6/rec_td, 25 pass yds/pt, 6/pass_td
@@ -748,7 +748,7 @@ const PC_BG = { QB:"#1e1b4b", RB:"#022c22", WR:"#0c2a3a", TE:"#3b0a1e" };
 
 const fmtADP = a => a % 1 === 0 ? a.toFixed(1) : a.toFixed(1);
 
-export default function DraftModel() {
+function DraftBoard() {
   const [search, setSearch]     = useState("");
   const [pos, setPos]           = useState("ALL");
   const [sortBy, setSortBy]     = useState("adp");
