@@ -1103,8 +1103,8 @@ function DraftBoard() {
                   <th className="frozen-col" style={{padding:"9px 10px",fontSize:10,color:"#94a3b8",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:0,zIndex:30,background:"#0b1120"}}>
                     <div style={{display:"flex",gap:4}}>
                       <span style={{flex:"1 1 0",textAlign:"center"}}>DRAFTED</span>
-                      <span style={{flex:"1 1 0",textAlign:"center"}}>FAV</span>
                       <span style={{flex:"1 1 0",textAlign:"center"}}>GONE</span>
+                      <span style={{flex:"1 1 0",textAlign:"center"}}>FAV</span>
                     </div>
                   </th>
                   <th className="frozen-col" style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:170,zIndex:30,background:"#0b1120"}}>PLAYER</th>
@@ -1149,18 +1149,18 @@ function DraftBoard() {
                             background:myPicks.has(p.name)?'#052e16':'transparent',
                             border:`1.5px solid ${myPicks.has(p.name)?'#22c55e':'#16a34a'}`,
                             color:myPicks.has(p.name)?'#22c55e':'#86efac'}}>DRAFTED</span>
-                        <span onClick={e=>toggleWatch(p.name,e)}
-                          title="Add to watch list"
-                          style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
-                            background:watch.has(p.name)?'#1c1205':'transparent',
-                            border:`1.5px solid ${watch.has(p.name)?'#f59e0b':'#d97706'}`,
-                            color:watch.has(p.name)?'#fbbf24':'#fde68a'}}>FAV</span>
                         <span onClick={e=>toggleGone(p.name,e)}
                           title="Mark off the board"
                           style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
                             background:gone.has(p.name)?'#2d0a0a':'transparent',
                             border:`1.5px solid ${gone.has(p.name)?'#ef4444':'#dc2626'}`,
                             color:gone.has(p.name)?'#ef4444':'#fca5a5'}}>GONE</span>
+                        <span onClick={e=>toggleWatch(p.name,e)}
+                          title="Add to watch list"
+                          style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
+                            background:watch.has(p.name)?'#1c1205':'transparent',
+                            border:`1.5px solid ${watch.has(p.name)?'#f59e0b':'#d97706'}`,
+                            color:watch.has(p.name)?'#fbbf24':'#fde68a'}}>FAV</span>
                       </div>
                   </td>
                   <td className="frozen-col" style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:170,zIndex:10,background:rowBg}}>
