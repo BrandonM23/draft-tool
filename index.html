@@ -38,7 +38,7 @@
       .cell-ppg, .cell-adp, .cell-ev { padding: 8px 3px !important; }
       .cell-ppg span { font-size: 13px !important; }
       .ev-main { font-size: 12px !important; }
-      .ev-sub { font-size: 7px !important; }
+      .ev-sub { font-size: 9px !important; }
       .cell-injury, .cell-value { padding: 8px 2px !important; }
       table td, table th { white-space: normal !important; }
     }
@@ -1293,7 +1293,7 @@ function DraftBoard() {
                   <td className="cell-ev" style={{padding:'10px',textAlign:'right',verticalAlign:'middle',whiteSpace:'nowrap'}}>
                     {p.evPPG != null
                       ? <><div className="ev-main" style={{fontSize:15,fontWeight:800,color:'#a78bfa'}}>{p.evPPG}</div>
-                          <div className="ev-sub" style={{fontSize:9,color:p.evPPG>p.ppg?'#4ade80':p.evPPG<p.ppg?'#f87171':'#94a3b8'}}>{p.evPPG>p.ppg?'▲':p.evPPG<p.ppg?'▼':'='} cons</div></>
+                          <div className="ev-sub" style={{fontSize:11,color:p.evPPG>p.ppg?'#4ade80':p.evPPG<p.ppg?'#f87171':'#94a3b8'}}>{p.evPPG>p.ppg?'▲':p.evPPG<p.ppg?'▼':'='} cons</div></>
                       : <div style={{fontSize:11,color:'#94a3b8'}}>—</div>
                     }
                   </td>
