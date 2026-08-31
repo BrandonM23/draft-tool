@@ -41,6 +41,8 @@
       .ev-sub { font-size: 9px !important; }
       .cell-injury, .cell-value { padding: 8px 2px !important; }
       table td, table th { white-space: normal !important; }
+      thead th { letter-spacing: 0 !important; font-size: 9px !important; }
+      thead th.cell-ev, thead th.cell-ppg, thead th.cell-adp, thead th.cell-tier { padding: 8px 3px !important; }
     }
   </style>
 </head>
@@ -1281,10 +1283,10 @@ function DraftBoard() {
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TEAM</th>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>INJURY</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>VALUE</th>
-                  <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#a78bfa",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>EV PPG</th>
-                  <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>CONSENSUS</th>
-                  <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>ADP</th>
-                  <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TIER</th>
+                  <th className="cell-ev" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#a78bfa",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}><span className="label-full">EV PPG</span><span className="label-icon">EV</span></th>
+                  <th className="cell-ppg" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}><span className="label-full">CONSENSUS</span><span className="label-icon">CONS</span></th>
+                  <th className="cell-adp" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>ADP</th>
+                  <th className="cell-tier" style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TIER</th>
                 </tr>
               </thead>
               <tbody>
