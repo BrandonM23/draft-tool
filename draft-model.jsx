@@ -19,14 +19,14 @@ const TEAM_PASS_ATT = {
   "LA":38,"BUF":36,"DET":36,"CIN":38,"BAL":34,"DAL":36,
   "SF":34,"GB":34,"SEA":28,"CHI":32,"KC":34,"NE":34,
   "PHI":32,"LAC":36,"JAC":34,"WAS":34,"IND":34,"TB":34,
-  "MIN":34,"HOU":34,"DEN":32,"NYG":34,"NO":30,"PIT":30,
+  "MIN":34,"HOU":34,"DEN":32,"NYG":34,"NO":33,"PIT":30,
   "ATL":28,"CAR":30,"TEN":30,"LV":32,"MIA":30,"CLE":28,
   "ARI":38,"NYJ":32
 };
 // 2025 target share (WR/TE) or targets per game (RB) from DraftSharks/nflverse
 const EV_TARGET_SHARE = {
   "Ja\'Marr Chase":0.302,"Amon-Ra St. Brown":0.285,"Puka Nacua":0.288,
-  "Jaxon Smith-Njigba":0.339,"Trey McBride":0.254,"Chris Olave":0.272,
+  "Jaxon Smith-Njigba":0.339,"Trey McBride":0.254,"Chris Olave":0.320,
   "Justin Jefferson":0.285,"Garrett Wilson":0.304,"Drake London":0.281,
   "Zay Flowers":0.277,"A.J. Brown":0.275,"Rashee Rice":0.262,
   "Malik Nabers":0.244,"DeVonta Smith":0.227,"Davante Adams":0.236,
@@ -41,6 +41,23 @@ const EV_TARGET_SHARE = {
   "Sam LaPorta":0.175,"Dallas Goedert":0.165,"Travis Kelce":0.170,
   "Jake Ferguson":0.160,"George Kittle":0.155,"Isaiah Likely":0.150,
   "Mark Andrews":0.160,"Dalton Kincaid":0.165,
+  // Additional WRs
+  "Ja\'Marr Chase":0.302,"AJ Brown":0.275,"Mike Evans":0.225,
+  "Luther Burden III":0.220,"Carnell Tate":0.185,"Christian Watson":0.195,
+  "Rome Odunze":0.210,"DJ Moore":0.200,"Brian Thomas Jr":0.215,
+  "Parker Washington":0.195,"Marvin Harrison Jr":0.210,"Josh Downs":0.195,
+  "Jayden Reed":0.200,"Chris Godwin":0.195,"Michael Pittman":0.200,
+  "Jakobi Meyers":0.185,"Makai Lemon":0.175,"Wan\'Dale Robinson":0.268,
+  "Stefon Diggs":0.220,"Michael Wilson":0.215,"Romeo Doubs":0.195,
+  "Xavier Worthy":0.195,"Quentin Johnston":0.185,"De\'Zhaun Stribling":0.175,
+  "Travis Hunter":0.200,"Khalil Shakir":0.190,"Matthew Golden":0.185,
+  "Ja\'Kobi Lane":0.170,"Keenan Allen":0.210,"Deebo Samuel":0.195,
+  "Rashid Shaheed":0.185,"Jauan Jennings":0.180,"Jordon Tyson":0.175,
+  "Denzel Boston":0.170,"Tre Tucker":0.165,"KC Concepcion":0.165,
+  "Jalen McMillan":0.175,"Harold Fannin":0.175,
+  // Additional TEs
+  "Brenton Strange":0.145,"Oronde Gadsden":0.150,"Juwan Johnson":0.140,
+  "Terrance Ferguson":0.145,"Chig Okonkwo":0.140,
   // RBs: targets per game
   "Jahmyr Gibbs":5.5,"Bijan Robinson":4.8,"Christian McCaffrey":7.6,
   "Jonathan Taylor":3.2,"De\'Von Achane":5.2,"James Cook":3.5,
@@ -50,6 +67,16 @@ const EV_TARGET_SHARE = {
   "Kyren Williams":3.5,"Travis Etienne":4.0,"Jeremiyah Love":3.2,
   "Bucky Irving":3.5,"Cam Skattebo":3.0,"Quinshon Judkins":3.2,
   "Bhayshul Tuten":2.8,"TreVeyon Henderson":3.0,"Jaylen Warren":3.2,
+  "De'Von Achane":5.2,"David Montgomery":2.8,"D'Andre Swift":3.5,
+  "Jadarian Price":2.5,"Blake Corum":2.8,"Rico Dowdle":3.0,
+  "Tony Pollard":3.2,"Jonathon Brooks":3.0,"Rhamondre Stevenson":2.8,
+  "J.K. Dobbins":3.5,"RJ Harvey":2.8,"Kyle Monangai":2.5,
+  "Chuba Hubbard":3.0,"Rachaad White":3.2,"Trey Benson":2.8,
+  "Kenny Gainwell":3.5,"Jacory Croskey-Merritt":2.5,"Jordan Mason":2.5,
+  "Aaron Jones":3.0,"JK Dobbins":3.5,"Chris Rodriguez":2.5,
+  "Keaton Mitchell":2.8,"Tyrone Tracy":2.5,"Tyler Allgeier":2.5,
+  "Woody Marks":2.5,"Tyjae Spears":3.5,"Zach Charbonnet":3.0,
+  "Isiah Pacheco":3.2,"Alvin Kamara":4.0,"Dylan Sampson":2.5,"Brian Robinson":2.5,
 };
 // RB carry share of team rush attempts (~27/game avg)
 const EV_CARRY_SHARE = {
@@ -61,6 +88,16 @@ const EV_CARRY_SHARE = {
   "Kyren Williams":0.58,"Travis Etienne":0.55,"Jeremiyah Love":0.55,
   "Bucky Irving":0.52,"Cam Skattebo":0.50,"Quinshon Judkins":0.50,
   "Bhayshul Tuten":0.45,"TreVeyon Henderson":0.48,"Jaylen Warren":0.48,
+  "De'Von Achane":0.60,"David Montgomery":0.55,"D'Andre Swift":0.55,
+  "Jadarian Price":0.50,"Blake Corum":0.50,"Rico Dowdle":0.55,
+  "Tony Pollard":0.52,"Jonathon Brooks":0.55,"Rhamondre Stevenson":0.58,
+  "J.K. Dobbins":0.58,"RJ Harvey":0.50,"Kyle Monangai":0.55,
+  "Chuba Hubbard":0.55,"Rachaad White":0.52,"Trey Benson":0.52,
+  "Kenny Gainwell":0.40,"Jacory Croskey-Merritt":0.45,"Jordan Mason":0.55,
+  "Aaron Jones":0.52,"JK Dobbins":0.58,"Chris Rodriguez":0.52,
+  "Keaton Mitchell":0.55,"Tyrone Tracy":0.50,"Tyler Allgeier":0.48,
+  "Woody Marks":0.48,"Tyjae Spears":0.50,"Zach Charbonnet":0.52,
+  "Isiah Pacheco":0.55,"Alvin Kamara":0.50,"Dylan Sampson":0.50,"Brian Robinson":0.52,
 };
 
 function calcEVPPG(player) {
@@ -704,6 +741,24 @@ const CONSENSUS_PPG = {
   "Woody Marks":4.7,"Brian Robinson":3.9,"Tyler Allgeier":3.9,"Zach Charbonnet":3.7,
   "Isiah Pacheco":6.0,"Alvin Kamara":7.0,"Terrance Ferguson":5.6,"Tre Tucker":7.0,
   "Michael Penix":6.0,"Cousins":6.0,"Tua Tagovailoa":7.7,
+  "AJ Brown":13.7,
+  "Luther Burden III":11.5,
+  "Brian Thomas Jr":10.9,
+  "Marvin Harrison Jr":10.3,
+  "De'Zhaun Stribling":8.5,
+  "Travis Hunter":9.2,
+  "Ja'Kobi Lane":7.8,
+  "Rachaad White":8.8,
+  "Trey Benson":8.2,
+  "Jacory Croskey-Merritt":7.5,
+  "JK Dobbins":9.1,
+  "Dylan Sampson":7.8,
+  "Jordon Tyson":8.5,
+  "Kayshon Boutte":7.2,
+  "Jackson Dart":16.2,
+  "J.J. McCarthy":16.8,
+  "Kirk Cousins":15.8,
+  "Tyrod Taylor":14.5
 };
 
 // ADP-curve baseline (proxy for usage model, 25% weight)
@@ -762,11 +817,12 @@ function calcBlendedPPG(player, liveData) {
       injuryMult = 0.88; games = 15;
     }
   }
-  const evPPG = calcEVPPG(player);
-  const base = evPPG != null ? (consensusPPG * 0.60) + (evPPG * 0.40) : consensusPPG;
-  const blended = base * injuryMult;
+  const evRaw = calcEVPPG(player);
+  const blended = (evRaw != null
+    ? (consensusPPG * 0.60 + evRaw * 0.40)
+    : consensusPPG) * injuryMult;
   const ppg = Math.round(blended * 10) / 10;
-  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round((calcVegasPPG(player))*10)/10, consensusPPG: Math.round(consensusPPG*10)/10, evPPG };
+  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round((calcVegasPPG(player))*10)/10, consensusPPG: Math.round(consensusPPG*10)/10, evPPG: evRaw != null ? Math.round(evRaw*10)/10 : null };
 }
 
 function getTier(pos, ppg) {
