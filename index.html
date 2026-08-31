@@ -22,7 +22,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-const { useState, useMemo, useRef, useCallback } = React;
+const { useState, useMemo, useRef } = React;
 
 // Vegas lines: DraftKings primary (Aug 2026). ADP from Rotoworld/FantasyEdge consensus Aug 26 2026.
 // Half-PPR: 0.1/rush_yd, 0.1/rec_yd, 0.5/rec, 6/rush_td, 6/rec_td, 25 pass yds/pt, 6/pass_td
@@ -670,14 +670,11 @@ function calcVegasPPG(player) {
   return pts / 17;
 }
 
-// liveData: Map of playerName → PPG from Sleeper API (null = use hardcoded)
-function calcBlendedPPG(player, liveData) {
+function calcBlendedPPG(player) {
   const vegasPPG   = calcVegasPPG(player);
   const curvePPG   = adpCurve(player.adp, player.pos);
-  // Consensus: live Sleeper > hardcoded NFLFantasyEdge > fallback to curve
-  const livePPG    = liveData ? liveData.get(player.name) : null;
   const staticPPG  = CONSENSUS_PPG[player.name] ?? null;
-  const consensusPPG = livePPG ?? staticPPG ?? curvePPG;
+  const consensusPPG = staticPPG ?? curvePPG;
   // Injury PPG multiplier: context-aware scaling based on note content, not just severity tier
   // Low/monitor flags assumed already priced into consensus — no additional haircut
   let injuryMult = 1.0;
@@ -768,79 +765,6 @@ function DraftBoard() {
   const [teams, setTeams]             = useState(12);
   const [clockWindow, setClockWindow] = useState(12);
   const [clockPos, setClockPos]       = useState("ALL");
-  const [liveData, setLiveData]       = useState(null);  // Map<name, PPG> from Sleeper
-  const [dataStatus, setDataStatus]   = useState("hardcoded"); // 'hardcoded'|'fetching'|'live'|'error'
-  const [dataAge, setDataAge]         = useState(null);
-
-  const fetchLiveData = useCallback(async () => {
-    const pw = prompt("Refresh password:");
-    if (pw !== "draft2026") return;
-    setDataStatus("fetching");
-    try {
-      // Build player list for Claude to project
-      const playerList = PLAYERS.map(p => `${p.name}|${p.pos}|${p.adp}`).join("\n");
-      const prompt = `You are a fantasy football projection system. Search the web for the most current 2026 NFL fantasy football consensus projections (half-PPR scoring, 17-game season).
-
-For each player below, return their projected PPG (fantasy points per game, half-PPR, per game not season total).
-Use the latest available consensus data from FantasyPros, NFLFantasyEdge, RotoBaller, or similar sources.
-Account for any injuries, suspensions, or role changes known as of today.
-
-Players (Name|Position|ADP):
-${playerList}
-
-Respond ONLY with a JSON object mapping exact player names to PPG numbers. No markdown, no explanation, no preamble. Example:
-{"Josh Allen":20.1,"Lamar Jackson":18.2}
-
-Use the exact player names as provided. If you cannot find data for a player, omit them.`;
-
-      // web_search_20250305 is server-side — Claude handles search loop internally.
-      // Single API call returns end_turn with final answer. No manual loop needed.
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 2000,
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-      if (!res.ok) {
-        const errBody = await res.text();
-        throw new Error(`API HTTP ${res.status}: ${errBody.slice(0,200)}`);
-      }
-      const data = await res.json();
-
-      // Collect all text blocks (response may include server_tool_use + text blocks)
-      const allText = (data.content || [])
-        .filter(b => b.type === "text")
-        .map(b => b.text)
-        .join("\n");
-
-      if (!allText) throw new Error(`No text block. stop_reason=${data.stop_reason} blocks=${JSON.stringify((data.content||[]).map(b=>b.type))}`);
-
-      // Extract JSON — strip markdown fences, find outermost {...}
-      const clean = allText.replace(/```json|```/g, "").trim();
-      const jsonMatch = clean.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error(`No JSON in response. Preview: ${clean.slice(0,300)}`);
-      const projections = JSON.parse(jsonMatch[0]);
-
-      const allProjections = new Map();
-      for (const [name, ppg] of Object.entries(projections)) {
-        if (typeof ppg === "number" && ppg > 0) {
-          allProjections.set(name, Math.round(ppg * 10) / 10);
-        }
-      }
-      if (allProjections.size < 10) throw new Error(`Too few players: ${allProjections.size}. Sample: ${[...allProjections.keys()].slice(0,3).join(", ")}`);
-
-      setLiveData(allProjections);
-      setDataStatus("live");
-      setDataAge(new Date().toLocaleTimeString());
-    } catch (err) {
-      console.warn("Claude fetch failed:", err.message);
-      setDataStatus("error");
-    }
-  }, []);
 
   const toggleMine = (name,e) => {
     e.stopPropagation();
@@ -864,10 +788,10 @@ Use the exact player names as provided. If you cannot find data for a player, om
         return p.vegas && ((p.vegas.rec_yds||0)+(p.vegas.pass_yds||0)+(p.vegas.rush_yds||0)>0);
       })
       .map(p => {
-        const {ppg,season,games,vegasPPG,consensusPPG} = calcBlendedPPG(p, liveData);
+        const {ppg,season,games,vegasPPG,consensusPPG} = calcBlendedPPG(p);
         return {...p,ppg,season,games,vegasPPG,consensusPPG,tier:getTier(p.pos,ppg),value:getValue(ppg,p.adp,p.pos)};
       });
-  },[liveData]);
+  },[]);
 
   const active = useMemo(() => {
     let arr = filterGone
@@ -985,14 +909,13 @@ Use the exact player names as provided. If you cannot find data for a player, om
         <h1 style={{fontSize:24,fontWeight:800,margin:0,background:"linear-gradient(135deg,#f8fafc,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-0.03em"}}>Draft Value Model</h1>
         <div style={{marginTop:6,fontSize:10,color:"#94a3b8"}}>PPG: Consensus projection vs ADP-implied value · Injury-adjusted</div>
         <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          <button onClick={fetchLiveData} disabled={dataStatus==="fetching"} style={{background:dataStatus==="live"?"#0a1f0a":"#131c2e",border:`1px solid ${dataStatus==="live"?"#22c55e":dataStatus==="error"?"#ef4444":"#2d3f5a"}`,color:dataStatus==="live"?"#4ade80":dataStatus==="error"?"#f87171":"#94a3b8",borderRadius:6,padding:"5px 12px",fontSize:9,fontWeight:700,cursor:dataStatus==="fetching"?"wait":"pointer",fontFamily:"inherit",letterSpacing:"0.1em"}}>{dataStatus==="fetching"?"⟳ FETCHING...":"🔄 REFRESH DATA"}</button>
-          <span style={{fontSize:9,color:dataStatus==="live"?"#4ade80":dataStatus==="error"?"#f87171":"#334155"}}>{dataStatus==="live"?`✓ LIVE · Claude + Web Search · ${dataAge}`:dataStatus==="error"?"⚠ LIVE FETCH FAILED · USING CACHED":dataStatus==="fetching"?"":"📊 CACHED · NFLFantasyEdge Aug 24 · Tap refresh for live Claude projections"}</span>
+          <span style={{fontSize:9,color:"#94a3b8"}}>📊 NFLFantasyEdge · Aug 24, 2026</span>
           <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
             <label style={{display:'flex',alignItems:'center',gap:5,fontSize:10,color:'#94a3b8',fontWeight:600}}>
               DRAFT SLOT
               <input type="number" min={1} max={teams} value={draftSlot} onChange={e=>setDraftSlot(Number(e.target.value))}
                 style={{width:38,background:'#0f172a',border:'1px solid #4f6380',borderRadius:4,color:'#a78bfa',padding:'4px 6px',fontSize:12,fontFamily:'inherit',textAlign:'center',fontWeight:800}} />
-              <span style={{color:'#475569',fontSize:9}}>/ {teams}</span>
+              <span style={{color:'#94a3b8',fontSize:9}}>/ {teams}</span>
             </label>
             {(myPicks.size > 0 || gone.size > 0) && (
               <button onClick={()=>{setMyPicks(new Set());setGone(new Set());}} style={{background:'#1a0a0a',border:'1px solid #7f1d1d',color:'#f87171',borderRadius:6,padding:'4px 10px',fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',letterSpacing:'0.1em'}}>
@@ -1011,7 +934,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
             cursor:"pointer",fontFamily:"inherit",border:"none",
             borderBottom:`2px solid ${tab===t?"#7c3aed":"transparent"}`,
             background:"transparent",
-            color:tab===t?"#a78bfa":"#475569"
+            color:tab===t?"#a78bfa":"#94a3b8"
           }}>{t}{t==="ROSTER"&&myPicks.size>0?` (${myPicks.size})`:""}</button>
         ))}
       </div>
@@ -1040,7 +963,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
                   <button key={v} onClick={()=>setSortBy(v)} style={{
                     flex:1,background:sortBy===v?"#1e293b":"transparent",
                     border:`1px solid ${sortBy===v?"#4f6380":"#1e293b"}`,
-                    color:sortBy===v?"#e2e8f0":"#475569",
+                    color:sortBy===v?"#e2e8f0":"#94a3b8",
                     borderRadius:6,padding:"7px 4px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:sortBy===v?700:400
                   }}>↕ {l}</button>
                 ))}
@@ -1048,19 +971,19 @@ Use the exact player names as provided. If you cannot find data for a player, om
               <button onClick={()=>setFilterWatch(!filterWatch)} style={{
                 background:filterWatch?"#1c1205":"#131c2e",
                 border:`1px solid ${filterWatch?"#f59e0b":"#2d3f5a"}`,
-                color:filterWatch?"#fbbf24":"#475569",
+                color:filterWatch?"#fbbf24":"#94a3b8",
                 borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
               }}>◈ WATCH{watch.size>0?` (${watch.size})`:""}</button>
               <button onClick={()=>setFilterGone(!filterGone)} style={{
                 background:filterGone?"#2d0a0a":"#131c2e",
                 border:`1px solid ${filterGone?"#ef4444":"#2d3f5a"}`,
-                color:filterGone?"#fca5a5":"#475569",
+                color:filterGone?"#fca5a5":"#94a3b8",
                 borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
               }}>✕ GONE{(gone.size+myPicks.size)>0?` (${gone.size+myPicks.size})`:""}</button>
               <button onClick={()=>setClockMode(!clockMode)} style={{
                 background:clockMode?"#0c1a0c":"#131c2e",
                 border:`1px solid ${clockMode?"#22c55e":"#2d3f5a"}`,
-                color:clockMode?"#4ade80":"#475569",
+                color:clockMode?"#4ade80":"#94a3b8",
                 borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"
               }}>⏱ CLOCK</button>
             </div>
@@ -1104,7 +1027,8 @@ Use the exact player names as provided. If you cannot find data for a player, om
             <table style={{borderCollapse:"collapse",width:"100%",tableLayout:"fixed",fontFamily:"inherit"}}>
               <colgroup>
                 <col style={{width:80}}/>
-                <col style={{width:140}}/>
+                <col style={{width:160}}/>
+                <col style={{width:110}}/>
                 <col style={{width:60}}/>
                 <col style={{width:55}}/>
                 <col style={{width:65}}/>
@@ -1113,6 +1037,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
                 <tr>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:0,zIndex:30,background:"#0b1120"}}>STATUS</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:80,zIndex:30,background:"#0b1120"}}>PLAYER</th>
+                  <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>VALUE</th>
                   <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>PPG</th>
                   <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>ADP</th>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TIER</th>
@@ -1123,10 +1048,10 @@ Use the exact player names as provided. If you cannot find data for a player, om
             // Tier break divider row
             if (p.__tierBreak) return (
               <tr key={p.key}>
-                <td colSpan={5} style={{padding:'0'}}>
+                <td colSpan={6} style={{padding:'0'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8,padding:'10px 12px 6px',background:'#0b1120'}}>
                     <div style={{flex:1,height:'1px',background:'#1e293b'}} />
-                    <span style={{fontSize:9,fontWeight:800,letterSpacing:'0.15em',color:'#475569',whiteSpace:'nowrap'}}>
+                    <span style={{fontSize:9,fontWeight:800,letterSpacing:'0.15em',color:'#94a3b8',whiteSpace:'nowrap'}}>
                       TIER {p.tierNum} · {p.adpRange} · ~{p.ppg.toFixed(1)} PPG
                     </span>
                     <div style={{flex:1,height:'1px',background:'#1e293b'}} />
@@ -1164,29 +1089,31 @@ Use the exact player names as provided. If you cannot find data for a player, om
                   <td style={{padding:'8px 8px 8px 4px',verticalAlign:'middle',position:'sticky',left:80,zIndex:10,background:'transparent'}}>
                       <div style={{fontSize:13,fontWeight:700,color:'#f1f5f9',display:'flex',alignItems:'center',gap:6,lineHeight:1.2}}>
                         <span style={{wordBreak:'break-word',lineHeight:1.3}}>{clockMode&&watch.has(p.name)&&<span style={{color:'#fbbf24',marginRight:3,fontSize:11}}>★</span>}{p.name}</span>
-                        <span style={{fontSize:13,fontWeight:800,color:'#64748b',flexShrink:0}}>{p.team}</span>
+                        <span style={{fontSize:13,fontWeight:800,color:'#94a3b8',flexShrink:0}}>{p.team}</span>
                         {p.injury_flag && <span style={{width:6,height:6,borderRadius:'50%',flexShrink:0,display:'inline-block',background:SEVERITY[p.injury_flag.severity]}} />}
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:3,marginTop:1,flexWrap:'nowrap'}}>
                         <span style={{background:posBg,color:posColor,fontSize:8,fontWeight:800,padding:'1px 4px',borderRadius:3,border:`1px solid ${posColor}44`,flexShrink:0}}>{p.pos}</span>
-                        <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:'2px 6px',borderRadius:4,border:`1px solid ${p.value.color}55`,whiteSpace:'nowrap',flexShrink:0}}>{p.value.label}</span>
                       </div>
+                  </td>
+                  <td style={{padding:'10px',verticalAlign:'middle'}}>
+                    <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:'2px 6px',borderRadius:4,border:`1px solid ${p.value.color}55`,whiteSpace:'nowrap'}}>{p.value.label}</span>
                   </td>
                   <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',whiteSpace:'nowrap'}}>
                     <span style={{fontSize:15,fontWeight:800,color:posColor}}>{p.ppg}</span>
                   </td>
-                  <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',fontSize:12,color:'#475569',fontWeight:600,whiteSpace:'nowrap'}}>{fmtADP(p.adp)}</td>
-                  <td style={{padding:'10px',textAlign:'center',verticalAlign:'middle',fontSize:11,color:'#64748b',fontWeight:600,whiteSpace:'nowrap'}}>
-                    {p.tierNum ? <span style={{background:'#1e293b',color:'#64748b',fontSize:9,fontWeight:800,padding:'2px 7px',borderRadius:10,border:'1px solid #334155',letterSpacing:'0.05em'}}>T{p.tierNum}</span> : '—'}
+                  <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',fontSize:12,color:'#94a3b8',fontWeight:600,whiteSpace:'nowrap'}}>{fmtADP(p.adp)}</td>
+                  <td style={{padding:'10px',textAlign:'center',verticalAlign:'middle',fontSize:11,color:'#94a3b8',fontWeight:600,whiteSpace:'nowrap'}}>
+                    {p.tierNum ? <span style={{background:'#1e293b',color:'#94a3b8',fontSize:9,fontWeight:800,padding:'2px 7px',borderRadius:10,border:'1px solid #334155',letterSpacing:'0.05em'}}>T{p.tierNum}</span> : '—'}
                   </td>
                 </tr>
                 {isExp && (
                   <tr>
-                    <td colSpan={5} style={{background:'#0d1424',padding:'14px 12px 14px 44px',fontSize:12}}>
+                    <td colSpan={6} style={{background:'#0d1424',padding:'14px 12px 14px 44px',fontSize:12}}>
                       <div style={{marginBottom:12}}>
                         <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.12em',marginBottom:4,fontWeight:700}}>ROLE</div>
                         <div style={{color:'#94a3b8'}}>{p.role}</div>
-                        <div style={{color:'#475569',marginTop:3}}>vs: {p.competition}</div>
+                        <div style={{color:'#94a3b8',marginTop:3}}>vs: {p.competition}</div>
                       </div>
                       {p.injury_flag && (
                         <div style={{marginBottom:12,padding:'8px 10px',background:SEVERITY[p.injury_flag.severity]+'11',borderRadius:6,border:`1px solid ${SEVERITY[p.injury_flag.severity]}33`}}>
@@ -1199,7 +1126,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
                         <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.12em',marginBottom:6,fontWeight:700}}>VEGAS LINES (DK)</div>
                         <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
                           {Object.entries(p.vegas).map(([k,v])=>v>0&&(
-                            <div key={k} style={{color:'#475569',fontSize:11}}>{k.replace(/_/g,' ')}: <span style={{color:'#e2e8f0',fontWeight:700}}>{v}</span></div>
+                            <div key={k} style={{color:'#94a3b8',fontSize:11}}>{k.replace(/_/g,' ')}: <span style={{color:'#e2e8f0',fontWeight:700}}>{v}</span></div>
                           ))}
                         </div>
                       </div>
@@ -1211,7 +1138,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
                         <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.12em',marginBottom:8,fontWeight:700}}>VALUE SIGNAL</div>
                         <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginBottom:8}}>
                           <span style={{fontSize:12,color:'#cbd5e1'}}>Consensus: <span style={{color:'#f1f5f9',fontWeight:800}}>{p.ppg} PPG</span></span>
-                          <span style={{color:'#64748b',fontSize:12}}>vs</span>
+                          <span style={{color:'#94a3b8',fontSize:12}}>vs</span>
                           <span style={{fontSize:12,color:'#cbd5e1'}}>ADP-implied: <span style={{color:'#f1f5f9',fontWeight:800}}>{p.value.exp} PPG</span></span>
                           <span style={{fontSize:14,fontWeight:800,color:p.value.color}}>{p.value.diff>0?'+':''}{p.value.diff}</span>
                         </div>
@@ -1243,7 +1170,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
       {tab==="ROSTER" && (
         <div style={{padding:"16px 12px"}}>
           {myPicks.size===0
-            ? <div style={{color:"#64748b",fontSize:12,textAlign:"center",marginTop:40}}>No picks yet — mark players ✓ on the BOARD tab.</div>
+            ? <div style={{color:"#94a3b8",fontSize:12,textAlign:"center",marginTop:40}}>No picks yet — mark players ✓ on the BOARD tab.</div>
             : <>
                 <div style={{fontSize:9,color:"#7c3aed",letterSpacing:"0.18em",fontWeight:800,marginBottom:10}}>STARTERS</div>
                 {SLOTS.filter(s=>!s.bench).map((slot,si) => {
@@ -1259,7 +1186,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
                         <span style={{fontSize:10,color:"#94a3b8",flexShrink:0}}>{p.team}</span>
                         <span style={{fontSize:13,fontWeight:800,color:posColor,flexShrink:0}}>{p.ppg}</span>
                         <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:"2px 6px",borderRadius:4,border:`1px solid ${p.value.color}44`,whiteSpace:"nowrap",flexShrink:0}}>{p.value.label}</span>
-                      </> : <span style={{fontSize:12,color:"#64748b",fontStyle:"italic"}}>Empty</span>}
+                      </> : <span style={{fontSize:12,color:"#94a3b8",fontStyle:"italic"}}>Empty</span>}
                     </div>
                   );
                 })}
@@ -1272,13 +1199,13 @@ Use the exact player names as provided. If you cannot find data for a player, om
                   const posBg    = p ? PC_BG[p.pos] : "transparent";
                   return (
                     <div key={slot.key} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",marginBottom:6,borderRadius:7,background:p?"#0b0f1a":"#080c14",border:`1px solid ${p?"#1e293b":"#0f1825"}`}}>
-                      <span style={{fontSize:9,fontWeight:800,color:"#64748b",letterSpacing:"0.1em",width:36,flexShrink:0}}>BE</span>
+                      <span style={{fontSize:9,fontWeight:800,color:"#94a3b8",letterSpacing:"0.1em",width:36,flexShrink:0}}>BE</span>
                       {p ? <>
                         <span style={{background:posBg,color:posColor,fontSize:9,fontWeight:800,padding:"1px 5px",borderRadius:3,border:`1px solid ${posColor}44`,flexShrink:0}}>{p.pos}</span>
                         <span style={{fontSize:14,fontWeight:700,color:"#94a3b8",flex:1}}>{p.name}</span>
                         <span style={{fontSize:10,color:"#94a3b8",flexShrink:0}}>{p.team}</span>
                         <span style={{fontSize:13,fontWeight:800,color:posColor,flexShrink:0}}>{p.ppg}</span>
-                      </> : <span style={{fontSize:12,color:"#64748b",fontStyle:"italic"}}>Empty</span>}
+                      </> : <span style={{fontSize:12,color:"#94a3b8",fontStyle:"italic"}}>Empty</span>}
                     </div>
                   );
                 })}
@@ -1298,7 +1225,7 @@ Use the exact player names as provided. If you cannot find data for a player, om
         </div>
       )}
 
-      <div style={{padding:"16px 12px",borderTop:"1px solid #0f1825",fontSize:9,color:"#64748b",lineHeight:1.6}}>
+      <div style={{padding:"16px 12px",borderTop:"1px solid #0f1825",fontSize:9,color:"#94a3b8",lineHeight:1.6}}>
         DK Vegas props Aug 2026 · Half-PPR · Injury adj: moderate −2g, high −4g · UNDERVALUED/OVERVALUED = ±0.7 PPG vs ADP expectation · bright = strong signal (≥2.0 PPG), muted = mild (0.7–2.0)
       </div>
     </div>
