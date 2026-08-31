@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026 Fantasy Draft Model</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #080c14; color: #e2e8f0; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b1120; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+import React, { useState, useMemo, useRef, useCallback } from "react";
+
+// Vegas lines: DraftKings primary (Aug 2026). ADP from Rotoworld/FantasyEdge consensus Aug 26 2026.
+// Half-PPR: 0.1/rush_yd, 0.1/rec_yd, 0.5/rec, 6/rush_td, 6/rec_td, 25 pass yds/pt, 6/pass_td
+
+const PLAYERS = [
+  // ── QBs ──
+  { name:"Josh Allen",          team:"BUF", pos:"QB", adp:30,
+    vegas:{pass_yds:4599.5,pass_td:34.5,rush_yds:699.5,rush_td:11.5},
+    injury_flag:null, role:"Dual-threat QB1", competition:"None" },
+  { name:"Lamar Jackson",       team:"BAL", pos:"QB", adp:46,
+    vegas:{pass_yds:3799.5,pass_td:28.5,rush_yds:849.5,rush_td:9.5},
+    injury_flag:null, role:"Elite dual threat, 2x MVP", competition:"None" },
+  { name:"Jayden Daniels",      team:"WAS", pos:"QB", adp:59,
+    vegas:{pass_yds:3999.5,pass_td:27.5,rush_yds:749.5,rush_td:8.5},
+    injury_flag:null, role:"Dual threat sophomore", competition:"None" },
+  { name:"Joe Burrow",          team:"CIN", pos:"QB", adp:64,
+    vegas:{pass_yds:4399.5,pass_td:32.5,rush_yds:199.5,rush_td:1.5},
+    injury_flag:null, role:"Elite passer", competition:"None" },
+  { name:"Drake Maye",          team:"NE",  pos:"QB", adp:66,
+    vegas:{pass_yds:3699.5,pass_td:24.5,rush_yds:499.5,rush_td:5.5},
+    injury_flag:null, role:"Dual threat sophomore", competition:"None" },
+  { name:"Jalen Hurts",         team:"PHI", pos:"QB", adp:80,
+    vegas:{pass_yds:3599.5,pass_td:25.5,rush_yds:699.5,rush_td:9.5},
+    injury_flag:null, role:"Elite dual threat", competition:"None" },
+  { name:"Dak Prescott",        team:"DAL", pos:"QB", adp:83,
+    vegas:{pass_yds:4399.5,pass_td:32.5,rush_yds:199.5,rush_td:2.5},
+    injury_flag:null, role:"Elite passer, new weapons", competition:"None" },
+  { name:"Justin Herbert",      team:"LAC", pos:"QB", adp:85,
+    vegas:{pass_yds:4199.5,pass_td:30.5,rush_yds:249.5,rush_td:2.5},
+    injury_flag:null, role:"Elite arm, inconsistent results", competition:"None" },
+  { name:"Patrick Mahomes",     team:"KC",  pos:"QB", adp:86,
+    vegas:{pass_yds:4399.5,pass_td:33.5,rush_yds:299.5,rush_td:3.5},
+    injury_flag:null, role:"GOAT, elite floor", competition:"None" },
+  { name:"Brock Purdy",         team:"SF",  pos:"QB", adp:107,
+    vegas:{pass_yds:4099.5,pass_td:30.5,rush_yds:199.5,rush_td:1.5},
+    injury_flag:null, role:"Elite system passer", competition:"None" },
+  { name:"Caleb Williams",      team:"CHI", pos:"QB", adp:89,
+    vegas:{pass_yds:3799.5,pass_td:27.5,rush_yds:449.5,rush_td:5.5},
+    injury_flag:null, role:"Dual threat sophomore", competition:"None" },
+  { name:"Jackson Dart",        team:"NYG", pos:"QB", adp:98,
+    vegas:{pass_yds:3499.5,pass_td:22.5,rush_yds:349.5,rush_td:3.5},
+    injury_flag:null, role:"Mobile sophomore", competition:"None" },
+  { name:"Jordan Love",         team:"GB",  pos:"QB", adp:106,
+    vegas:{pass_yds:3899.5,pass_td:27.5,rush_yds:299.5,rush_td:3.5},
+    injury_flag:null, role:"Ascending starter", competition:"None" },
+  { name:"Jared Goff",          team:"DET", pos:"QB", adp:122,
+    vegas:{pass_yds:4299.5,pass_td:31.5,rush_yds:99.5,rush_td:0.5},
+    injury_flag:null, role:"Elite rhythm passer", competition:"None" },
+  { name:"Matthew Stafford",    team:"LAR", pos:"QB", adp:113,
+    vegas:{pass_yds:3999.5,pass_td:28.5,rush_yds:99.5,rush_td:0.5},
+    injury_flag:null, role:"Veteran pocket passer", competition:"None" },
+  { name:"Trevor Lawrence",     team:"JAX", pos:"QB", adp:117,
+    vegas:{pass_yds:3899.5,pass_td:27.5,rush_yds:299.5,rush_td:3.5},
+    injury_flag:null, role:"Ascending starter", competition:"None" },
+  { name:"Kyler Murray",        team:"MIN", pos:"QB", adp:124,
+    vegas:{pass_yds:3699.5,pass_td:26.5,rush_yds:549.5,rush_td:6.5},
+    injury_flag:null, role:"Dual threat veteran", competition:"None" },
+  { name:"Baker Mayfield",      team:"TB",  pos:"QB", adp:131,
+    vegas:{pass_yds:3999.5,pass_td:28.5,rush_yds:199.5,rush_td:2.5},
+    injury_flag:null, role:"Resurgent starter", competition:"None" },
+  { name:"Bo Nix",              team:"DEN", pos:"QB", adp:126,
+    vegas:{pass_yds:3599.5,pass_td:23.5,rush_yds:399.5,rush_td:4.5},
+    injury_flag:null, role:"Mobile sophomore", competition:"None" },
+
+  // ── RBs ──
+  { name:"Jahmyr Gibbs",        team:"DET", pos:"RB", adp:1,
+    vegas:{rush_yds:1299.5,rush_td:12.5,rec:54.5,rec_yds:424.5,rec_td:2.5},
+    injury_flag:null, role:"Bellcow with Montgomery gone", competition:"Minimal" },
+  { name:"Bijan Robinson",      team:"ATL", pos:"RB", adp:2,
+    vegas:{rush_yds:1474.5,rush_td:9.5,rec:74.5,rec_yds:724.5,rec_td:2.5},
+    injury_flag:null, role:"Workhorse RB1, 3-down back", competition:"None meaningful" },
+  { name:"Christian McCaffrey", team:"SF",  pos:"RB", adp:6,
+    vegas:{rush_yds:1249.5,rush_td:10.5,rec:79.5,rec_yds:624.5,rec_td:3.5},
+    injury_flag:{severity:"moderate", note:"Missed significant time in 2025. Monitor closely."},
+    role:"Elite 3-down back when healthy", competition:"None meaningful" },
+  { name:"Jonathan Taylor",     team:"IND", pos:"RB", adp:8,
+    vegas:{rush_yds:1424.5,rush_td:14.5,rec:44.5,rec_yds:324.5,rec_td:1.5},
+    injury_flag:null, role:"Workhorse", competition:"None meaningful" },
+  { name:"De'Von Achane",       team:"MIA", pos:"RB", adp:13,
+    vegas:{rush_yds:1049.5,rush_td:9.5,rec:69.5,rec_yds:549.5,rec_td:2.5},
+    injury_flag:null, role:"Explosive bellcow", competition:"Minimal" },
+  { name:"James Cook",          team:"BUF", pos:"RB", adp:11,
+    vegas:{rush_yds:1249.5,rush_td:11.5,rec:44.5,rec_yds:324.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back", competition:"Minimal" },
+  { name:"Saquon Barkley",      team:"PHI", pos:"RB", adp:12,
+    vegas:{rush_yds:1299.5,rush_td:11.5,rec:49.5,rec_yds:374.5,rec_td:2.5},
+    injury_flag:null, role:"Workhorse, Super Bowl champ", competition:"None meaningful" },
+  { name:"Derrick Henry",       team:"BAL", pos:"RB", adp:17,
+    vegas:{rush_yds:1274.5,rush_td:13.5,rec:34.5,rec_yds:224.5,rec_td:1.5},
+    injury_flag:null, role:"Power bellcow BAL", competition:"Justice Hill (3rd down)" },
+  { name:"Kenneth Walker",      team:"KC",  pos:"RB", adp:23,
+    vegas:{rush_yds:1124.5,rush_td:8.5,rec:44.5,rec_yds:324.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back KC", competition:"Minimal" },
+  { name:"Chase Brown",         team:"CIN", pos:"RB", adp:14,
+    vegas:{rush_yds:1099.5,rush_td:9.5,rec:54.5,rec_yds:374.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back CIN — Mixon gone", competition:"Minimal" },
+  { name:"Omarion Hampton",     team:"LAC", pos:"RB", adp:24,
+    vegas:{rush_yds:1149.5,rush_td:9.5,rec:49.5,rec_yds:374.5,rec_td:1.5},
+    injury_flag:null, role:"Expected bellcow", competition:"Minimal" },
+  { name:"Ashton Jeanty",       team:"LV",  pos:"RB", adp:29,
+    vegas:{rush_yds:1099.5,rush_td:9.5,rec:54.5,rec_yds:374.5,rec_td:1.5},
+    injury_flag:{severity:"moderate", note:"Ankle sprain Aug 23 — low ankle per Rapoport, 2-4wk timeline. Week 1 status uncertain."},
+    role:"Bellcow if healthy", competition:"Mike Washington if out" },
+  { name:"Jeremiyah Love",      team:"ARI", pos:"RB", adp:31,
+    vegas:{rush_yds:999.5,rush_td:8.5,rec:44.5,rec_yds:299.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back ARI — rookie", competition:"Minimal" },
+  { name:"Javonte Williams",    team:"DAL", pos:"RB", adp:32,
+    vegas:{rush_yds:999.5,rush_td:8.5,rec:44.5,rec_yds:274.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back DAL", competition:"Minimal" },
+  { name:"Kyren Williams",      team:"LAR", pos:"RB", adp:28,
+    vegas:{rush_yds:1049.5,rush_td:9.5,rec:49.5,rec_yds:324.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back LAR", competition:"Minimal" },
+  { name:"Breece Hall",         team:"NYJ", pos:"RB", adp:36,
+    vegas:{rush_yds:999.5,rush_td:7.5,rec:54.5,rec_yds:374.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back with receiving role", competition:"Minimal" },
+  { name:"Josh Jacobs",         team:"GB",  pos:"RB", adp:38,
+    vegas:{rush_yds:1049.5,rush_td:8.5,rec:44.5,rec_yds:274.5,rec_td:1.5},
+    injury_flag:null, role:"Bellcow, Red zone alpha", competition:"Minimal" },
+  { name:"Travis Etienne",      team:"NO",  pos:"RB", adp:27,
+    vegas:{rush_yds:924.5,rush_td:7.5,rec:49.5,rec_yds:324.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back NO", competition:"Minimal" },
+  { name:"Bucky Irving",        team:"TB",  pos:"RB", adp:41,
+    vegas:{rush_yds:924.5,rush_td:7.5,rec:44.5,rec_yds:274.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back TB", competition:"Minimal" },
+  { name:"Cam Skattebo",        team:"NYG", pos:"RB", adp:42,
+    vegas:{rush_yds:874.5,rush_td:7.5,rec:39.5,rec_yds:249.5,rec_td:1.5},
+    injury_flag:null, role:"Emerging lead back", competition:"Moderate" },
+  { name:"David Montgomery",    team:"HOU", pos:"RB", adp:44,
+    vegas:{rush_yds:849.5,rush_td:7.5,rec:39.5,rec_yds:224.5,rec_td:1.5},
+    injury_flag:null, role:"Co-starter HOU", competition:"Minimal" },
+  { name:"D'Andre Swift",       team:"CHI", pos:"RB", adp:45,
+    vegas:{rush_yds:874.5,rush_td:7.5,rec:54.5,rec_yds:349.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back CHI", competition:"Kyle Monangai" },
+  { name:"Quinshon Judkins",    team:"CLE", pos:"RB", adp:48,
+    vegas:{rush_yds:899.5,rush_td:7.5,rec:39.5,rec_yds:274.5,rec_td:1.5},
+    injury_flag:null, role:"Featured back", competition:"Minimal" },
+  { name:"Bhayshul Tuten",      team:"JAX", pos:"RB", adp:51,
+    vegas:{rush_yds:824.5,rush_td:6.5,rec:44.5,rec_yds:274.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back JAX", competition:"Chris Rodriguez" },
+  { name:"TreVeyon Henderson",  team:"NE",  pos:"RB", adp:52,
+    vegas:{rush_yds:824.5,rush_td:6.5,rec:44.5,rec_yds:274.5,rec_td:1.5},
+    injury_flag:null, role:"Co-starter NE", competition:"Mondre (early downs)" },
+  { name:"Jadarian Price",      team:"SEA", pos:"RB", adp:54,
+    vegas:{rush_yds:724.5,rush_td:5.5,rec:39.5,rec_yds:224.5,rec_td:1.0},
+    injury_flag:null, role:"Lead back SEA — rookie", competition:"Minimal" },
+  { name:"Jaylen Warren",       team:"PIT", pos:"RB", adp:65,
+    vegas:{rush_yds:749.5,rush_td:6.5,rec:49.5,rec_yds:324.5,rec_td:1.5},
+    injury_flag:null, role:"Co-starter, pass-catching role", competition:"Rico Dowdle" },
+  { name:"Blake Corum",         team:"LAR", pos:"RB", adp:67,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:34.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:null, role:"Handcuff / backup LAR", competition:"Kyren Williams" },
+  { name:"Rico Dowdle",         team:"PIT", pos:"RB", adp:72,
+    vegas:{rush_yds:799.5,rush_td:6.5,rec:39.5,rec_yds:224.5,rec_td:1.0},
+    injury_flag:null, role:"Co-starter PIT", competition:"Jaylen Warren" },
+  { name:"Tony Pollard",        team:"TEN", pos:"RB", adp:74,
+    vegas:{rush_yds:749.5,rush_td:6.5,rec:44.5,rec_yds:274.5,rec_td:1.5},
+    injury_flag:null, role:"Lead back TEN", competition:"Minimal" },
+  { name:"Jonathon Brooks",     team:"CAR", pos:"RB", adp:75,
+    vegas:{rush_yds:724.5,rush_td:5.5,rec:39.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:{severity:"moderate", note:"Knee history — returned 2025 but still carry-count risk."},
+    role:"Lead back CAR if healthy", competition:"Chuba Hubbard" },
+  { name:"Rhamondre Stevenson", team:"NE",  pos:"RB", adp:76,
+    vegas:{rush_yds:774.5,rush_td:6.5,rec:39.5,rec_yds:224.5,rec_td:1.0},
+    injury_flag:null, role:"Co-starter NE", competition:"TreVeyon Henderson" },
+  { name:"J.K. Dobbins",        team:"DEN", pos:"RB", adp:78,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:34.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:null, role:"Co-starter DEN", competition:"RJ Harvey" },
+  { name:"RJ Harvey",           team:"DEN", pos:"RB", adp:79,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:39.5,rec_yds:224.5,rec_td:1.0},
+    injury_flag:null, role:"Co-starter DEN", competition:"JK Dobbins" },
+  { name:"Jordan Addison",      team:"MIN", pos:"RB", adp:77,
+    // Note: listed as WR in data; see WR section
+    vegas:{rec_yds:874.5,rec:69.5,rec_td:5.5},
+    injury_flag:null, role:"WR2 MIN", competition:"Justin Jefferson" },
+  { name:"Kyle Monangai",       team:"CHI", pos:"RB", adp:87,
+    vegas:{rush_yds:674.5,rush_td:5.5,rec:39.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:null, role:"Co-starter CHI", competition:"D'Andre Swift" },
+  { name:"Chuba Hubbard",       team:"CAR", pos:"RB", adp:94,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:39.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:null, role:"Co-starter CAR", competition:"Jonathon Brooks" },
+  { name:"Rachaad White",       team:"WAS", pos:"RB", adp:96,
+    vegas:{rush_yds:649.5,rush_td:5.0,rec:49.5,rec_yds:274.5,rec_td:1.0},
+    injury_flag:null, role:"Pass-catching back WAS", competition:"Jacory Croskey-Merritt" },
+  { name:"Trey Benson",         team:"JAX", pos:"RB", adp:101,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:34.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:null, role:"Co-starter JAX", competition:"Bhayshul Tuten" },
+  { name:"Kenny Gainwell",      team:"TB",  pos:"RB", adp:102,
+    vegas:{rush_yds:599.5,rush_td:4.5,rec:44.5,rec_yds:224.5,rec_td:1.0},
+    injury_flag:null, role:"3rd-down back TB", competition:"Bucky Irving" },
+  { name:"Jacory Croskey-Merritt",team:"WAS",pos:"RB",adp:110,
+    vegas:{rush_yds:649.5,rush_td:5.0,rec:34.5,rec_yds:174.5,rec_td:0.5},
+    injury_flag:null, role:"Lead back candidate WAS", competition:"Rachaad White" },
+  { name:"Jordan Mason",        team:"MIN", pos:"RB", adp:109,
+    vegas:{rush_yds:624.5,rush_td:5.0,rec:29.5,rec_yds:149.5,rec_td:0.5},
+    injury_flag:null, role:"Backup MIN", competition:"Kyler Murray zone-read" },
+  { name:"Aaron Jones",         team:"MIN", pos:"RB", adp:97,
+    vegas:{rush_yds:649.5,rush_td:5.0,rec:44.5,rec_yds:224.5,rec_td:1.0},
+    injury_flag:null, role:"Veteran back MIN", competition:"Jordan Mason" },
+
+  // ── WRs ──
+  { name:"Ja'Marr Chase",       team:"CIN", pos:"WR", adp:3,
+    vegas:{rec_yds:1524.5,rec:118.5,rec_td:12.5},
+    injury_flag:{severity:"low", note:"Knee hyperextension Aug 25 — no structural damage, practiced next day. Non-issue."},
+    role:"Undisputed WR1 CIN", competition:"Tee Higgins" },
+  { name:"Puka Nacua",          team:"LAR", pos:"WR", adp:4,
+    vegas:{rec_yds:1350.5,rec:106.5,rec_td:8.5},
+    injury_flag:null, role:"WR1 LAR — massive target share", competition:"Davante Adams" },
+  { name:"Jaxon Smith-Njigba",  team:"SEA", pos:"WR", adp:5,
+    vegas:{rec_yds:1199.5,rec:104.5,rec_td:6.5},
+    injury_flag:null, role:"WR1 SEA — breakout 2025", competition:"None meaningful" },
+  { name:"Amon-Ra St. Brown",   team:"DET", pos:"WR", adp:7,
+    vegas:{rec_yds:1274.5,rec:124.5,rec_td:7.5},
+    injury_flag:null, role:"WR1 DET, elite volume", competition:"Jameson Williams" },
+  { name:"Justin Jefferson",    team:"MIN", pos:"WR", adp:9,
+    vegas:{rec_yds:1274.5,rec:94.5,rec_td:8.5},
+    injury_flag:null, role:"WR1 MIN, elite talent", competition:"Jordan Addison" },
+  { name:"CeeDee Lamb",         team:"DAL", pos:"WR", adp:10,
+    vegas:{rec_yds:1274.5,rec:104.5,rec_td:8.5},
+    injury_flag:null, role:"WR1 DAL, elite volume", competition:"George Pickens" },
+  { name:"Drake London",        team:"ATL", pos:"WR", adp:14,
+    vegas:{rec_yds:1099.5,rec:89.5,rec_td:7.5},
+    injury_flag:null, role:"WR1 ATL", competition:"None meaningful; QB situation murky" },
+  { name:"Nico Collins",        team:"HOU", pos:"WR", adp:15,
+    vegas:{rec_yds:1074.5,rec:84.5,rec_td:7.5},
+    injury_flag:{severity:"high", note:"Chronic injury history — has never played full 17-game season."},
+    role:"WR1 when healthy", competition:"Tank Dell, Diontae Johnson" },
+  { name:"Rashee Rice",         team:"KC",  pos:"WR", adp:15,
+    vegas:{rec_yds:1074.5,rec:84.5,rec_td:7.5},
+    injury_flag:null, role:"WR1 KC — Mahomes target", competition:"Minimal" },
+  { name:"AJ Brown",            team:"NE",  pos:"WR", adp:20,
+    vegas:{rec_yds:1124.5,rec:78.5,rec_td:7.5},
+    injury_flag:null, role:"WR1 NE — new market", competition:"None meaningful" },
+  { name:"Malik Nabers",        team:"NYG", pos:"WR", adp:21,
+    vegas:{rec_yds:999.5,rec:79.5,rec_td:6.5},
+    injury_flag:{severity:"high", note:"Torn ACL+meniscus 2025 — 2nd cleanup surgery. Full drills Aug 15 but no committed Wk1 date. Real IR risk."},
+    role:"Elite talent when healthy", competition:"Minimal" },
+  { name:"George Pickens",      team:"DAL", pos:"WR", adp:22,
+    vegas:{rec_yds:1049.5,rec:74.5,rec_td:7.5},
+    injury_flag:null, role:"WR2 DAL, explosive talent", competition:"CeeDee Lamb" },
+  { name:"Chris Olave",         team:"NO",  pos:"WR", adp:26,
+    vegas:{rec_yds:1024.5,rec:82.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 NO — Tyson out ~6wks", competition:"Jordyn Tyson (back Wk6)" },
+  { name:"Zay Flowers",         team:"BAL", pos:"WR", adp:37,
+    vegas:{rec_yds:1024.5,rec:84.5,rec_td:6.5},
+    injury_flag:null, role:"WR1 BAL", competition:"Minimal" },
+  { name:"Tetairoa McMillan",   team:"CAR", pos:"WR", adp:33,
+    vegas:{rec_yds:999.5,rec:74.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 CAR — Rookie of Year", competition:"None meaningful" },
+  { name:"Tee Higgins",         team:"CIN", pos:"WR", adp:35,
+    vegas:{rec_yds:974.5,rec:74.5,rec_td:6.5},
+    injury_flag:{severity:"high", note:"Chronic injury history — has never played full season."},
+    role:"WR2 CIN when healthy", competition:"Ja'Marr Chase" },
+  { name:"Ladd McConkey",       team:"LAC", pos:"WR", adp:39,
+    vegas:{rec_yds:899.5,rec:71.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 LAC", competition:"None meaningful" },
+  { name:"DeVonta Smith",       team:"PHI", pos:"WR", adp:40,
+    vegas:{rec_yds:1049.5,rec:79.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 PHI — AJ Brown traded", competition:"None meaningful" },
+  { name:"Jaylen Waddle",       team:"DEN", pos:"WR", adp:43,
+    vegas:{rec_yds:920.5,rec:68.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 DEN", competition:"None meaningful" },
+  { name:"Garrett Wilson",      team:"NYJ", pos:"WR", adp:47,
+    vegas:{rec_yds:999.5,rec:84.5,rec_td:4.5},
+    injury_flag:null, role:"WR1 NYJ", competition:"None meaningful" },
+  { name:"Emeka Egbuka",        team:"TB",  pos:"WR", adp:49,
+    vegas:{rec_yds:924.5,rec:70.5,rec_td:6.5},
+    injury_flag:{severity:"moderate", note:"Turf toe — unclear Week 1 availability. Can linger all season (cf. Tyreek Hill 2023)."},
+    role:"WR1 TB if healthy", competition:"Godwin (declining)" },
+  { name:"Mike Evans",          team:"SF",  pos:"WR", adp:50,
+    vegas:{rec_yds:899.5,rec:64.5,rec_td:8.5},
+    injury_flag:null, role:"WR1 SF — red zone alpha", competition:"Minimal" },
+  { name:"Davante Adams",       team:"LAR", pos:"WR", adp:53,
+    vegas:{rec_yds:999.5,rec:84.5,rec_td:9.5},
+    injury_flag:null, role:"WR2 LAR, red zone alpha", competition:"Puka Nacua" },
+  { name:"Terry McLaurin",      team:"WAS", pos:"WR", adp:55,
+    vegas:{rec_yds:974.5,rec:74.5,rec_td:6.5},
+    injury_flag:null, role:"WR1 WAS — Daniels connection", competition:"Minimal" },
+  { name:"Jameson Williams",    team:"DET", pos:"WR", adp:56,
+    vegas:{rec_yds:999.5,rec:74.5,rec_td:7.5},
+    injury_flag:null, role:"WR2 DET — speed threat", competition:"Amon-Ra St. Brown" },
+  { name:"Luther Burden III",   team:"CHI", pos:"WR", adp:58,
+    vegas:{rec_yds:849.5,rec:64.5,rec_td:4.5},
+    injury_flag:null, role:"WR2 CHI", competition:"Rome Odunze" },
+  { name:"Carnell Tate",        team:"TEN", pos:"WR", adp:60,
+    vegas:{rec_yds:799.5,rec:61.5,rec_td:4.5},
+    injury_flag:null, role:"WR1 potential", competition:"Wan'Dale Robinson" },
+  { name:"Christian Watson",    team:"GB",  pos:"WR", adp:61,
+    vegas:{rec_yds:874.5,rec:64.5,rec_td:6.5},
+    injury_flag:null, role:"WR1 GB upside", competition:"Tucker Kraft volume" },
+  { name:"Rome Odunze",         team:"CHI", pos:"WR", adp:62,
+    vegas:{rec_yds:924.5,rec:79.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 CHI", competition:"Luther Burden" },
+  { name:"DJ Moore",            team:"BUF", pos:"WR", adp:63,
+    vegas:{rec_yds:800.5,rec:59.5,rec_td:6.5},
+    injury_flag:null, role:"WR1 BUF", competition:"Khalil Shakir" },
+  { name:"Brian Thomas Jr",     team:"JAX", pos:"WR", adp:68,
+    vegas:{rec_yds:999.5,rec:74.5,rec_td:6.5},
+    injury_flag:null, role:"WR1 JAX — elite upside", competition:"Parker Washington" },
+  { name:"Parker Washington",   team:"JAX", pos:"WR", adp:69,
+    vegas:{rec_yds:824.5,rec:62.5,rec_td:4.5},
+    injury_flag:null, role:"WR2 JAX", competition:"Brian Thomas Jr" },
+  { name:"Marvin Harrison Jr",  team:"ARI", pos:"WR", adp:70,
+    vegas:{rec_yds:924.5,rec:74.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 ARI", competition:"Michael Wilson" },
+  { name:"DK Metcalf",          team:"PIT", pos:"WR", adp:73,
+    vegas:{rec_yds:1049.5,rec:74.5,rec_td:7.5},
+    injury_flag:null, role:"WR1 PIT — Rodgers boost", competition:"Michael Pittman" },
+  { name:"Jordan Addison",      team:"MIN", pos:"WR", adp:77,
+    vegas:{rec_yds:874.5,rec:69.5,rec_td:5.5},
+    injury_flag:null, role:"WR2 MIN", competition:"Justin Jefferson" },
+  { name:"Courtland Sutton",    team:"DEN", pos:"WR", adp:92,
+    vegas:{rec_yds:874.5,rec:69.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 DEN veteran", competition:"Jaylen Waddle" },
+  { name:"Josh Downs",          team:"IND", pos:"WR", adp:90,
+    vegas:{rec_yds:824.5,rec:67.5,rec_td:4.0},
+    injury_flag:null, role:"WR1 IND", competition:"Alec Pierce" },
+  { name:"Jayden Reed",         team:"GB",  pos:"WR", adp:91,
+    vegas:{rec_yds:799.5,rec:67.5,rec_td:4.5},
+    injury_flag:null, role:"WR2 GB — slot", competition:"Christian Watson" },
+  { name:"Chris Godwin",        team:"TB",  pos:"WR", adp:93,
+    vegas:{rec_yds:799.5,rec:64.5,rec_td:4.5},
+    injury_flag:null, role:"WR2 TB — declining", competition:"Emeka Egbuka" },
+  { name:"Alec Pierce",         team:"IND", pos:"WR", adp:112,
+    vegas:{rec_yds:824.5,rec:62.5,rec_td:5.5},
+    injury_flag:null, role:"WR1 IND — deep threat", competition:"Josh Downs" },
+  { name:"Michael Pittman",     team:"PIT", pos:"WR", adp:123,
+    vegas:{rec_yds:749.5,rec:70.5,rec_td:4.5},
+    injury_flag:null, role:"WR2 PIT", competition:"DK Metcalf" },
+  { name:"Jakobi Meyers",       team:"JAX", pos:"WR", adp:99,
+    vegas:{rec_yds:749.5,rec:64.5,rec_td:3.5},
+    injury_flag:null, role:"WR3 JAX slot", competition:"Brian Thomas Jr" },
+  { name:"Makai Lemon",         team:"PHI", pos:"WR", adp:82,
+    vegas:{rec_yds:749.5,rec:59.5,rec_td:4.5},
+    injury_flag:null, role:"WR2 PHI rookie", competition:"DeVonta Smith" },
+  { name:"Wan'Dale Robinson",   team:"TEN", pos:"WR", adp:100,
+    vegas:{rec_yds:724.5,rec:64.5,rec_td:3.5},
+    injury_flag:null, role:"WR2 TEN slot", competition:"Carnell Tate" },
+  { name:"Stefon Diggs",        team:"WAS", pos:"WR", adp:105,
+    vegas:{rec_yds:749.5,rec:59.5,rec_td:4.5},
+    injury_flag:null, role:"WR3 WAS veteran", competition:"Terry McLaurin" },
+  { name:"Michael Wilson",      team:"ARI", pos:"WR", adp:84,
+    vegas:{rec_yds:799.5,rec:62.5,rec_td:4.5},
+    injury_flag:null, role:"WR2 ARI", competition:"Marvin Harrison Jr" },
+  { name:"Romeo Doubs",         team:"NE",  pos:"WR", adp:103,
+    vegas:{rec_yds:699.5,rec:54.5,rec_td:4.0},
+    injury_flag:null, role:"WR2 NE", competition:"AJ Brown" },
+  { name:"Xavier Worthy",       team:"KC",  pos:"WR", adp:104,
+    vegas:{rec_yds:724.5,rec:59.5,rec_td:4.5},
+    injury_flag:null, role:"WR2 KC speed threat", competition:"Rashee Rice" },
+  { name:"Quentin Johnston",    team:"LAC", pos:"WR", adp:111,
+    vegas:{rec_yds:724.5,rec:57.5,rec_td:4.0},
+    injury_flag:null, role:"WR2 LAC", competition:"Ladd McConkey" },
+  { name:"De'Zhaun Stribling",  team:"SF",  pos:"WR", adp:121,
+    vegas:{rec_yds:624.5,rec:49.5,rec_td:3.5},
+    injury_flag:null, role:"WR2 SF rookie", competition:"Mike Evans" },
+  { name:"Travis Hunter",       team:"JAX", pos:"WR", adp:145,
+    vegas:{rec_yds:649.5,rec:54.5,rec_td:3.5},
+    injury_flag:null, role:"WR3 JAX — unique two-way talent", competition:"Brian Thomas Jr" },
+  { name:"Khalil Shakir",       team:"BUF", pos:"WR", adp:127,
+    vegas:{rec_yds:674.5,rec:59.5,rec_td:3.5},
+    injury_flag:null, role:"WR2 BUF slot", competition:"DJ Moore" },
+  { name:"Matthew Golden",      team:"GB",  pos:"WR", adp:118,
+    vegas:{rec_yds:649.5,rec:49.5,rec_td:4.0},
+    injury_flag:null, role:"WR3 GB rookie", competition:"Christian Watson" },
+  { name:"Ja'Kobi Lane",        team:"BAL", pos:"WR", adp:156,
+    vegas:{rec_yds:599.5,rec:49.5,rec_td:3.0},
+    injury_flag:null, role:"WR2 BAL rookie", competition:"Zay Flowers" },
+
+  // ── TEs ──
+  { name:"Brock Bowers",        team:"LV",  pos:"TE", adp:16,
+    vegas:{rec_yds:924.5,rec:84.5,rec_td:5.5},
+    injury_flag:{severity:"low", note:"Played through injury in 2025, missed 5 games. Monitor."},
+    role:"Focal point LV offense", competition:"None meaningful" },
+  { name:"Trey McBride",        team:"ARI", pos:"TE", adp:25,
+    vegas:{rec_yds:974.5,rec:94.5,rec_td:9.5},
+    injury_flag:null, role:"TE1 overall — elite volume+TD", competition:"None meaningful" },
+  { name:"Colston Loveland",    team:"CHI", pos:"TE", adp:34,
+    vegas:{rec_yds:824.5,rec:69.5,rec_td:5.5},
+    injury_flag:null, role:"TE1 CHI — breakout candidate", competition:"None meaningful" },
+  { name:"Tyler Warren",        team:"IND", pos:"TE", adp:57,
+    vegas:{rec_yds:849.5,rec:74.5,rec_td:5.5},
+    injury_flag:{severity:"low", note:"Groin injury joint practice vs ATL — ~1wk out per Rapoport. No Week 1 concern."},
+    role:"TE1 IND — massive target share", competition:"None meaningful" },
+  { name:"Kyle Pitts",          team:"ATL", pos:"TE", adp:95,
+    vegas:{rec_yds:749.5,rec:64.5,rec_td:5.5},
+    injury_flag:null, role:"TE1 ATL — upside if healthy", competition:"Drake London volume" },
+  { name:"Harold Fannin Jr.",   team:"CLE", pos:"TE", adp:71,
+    vegas:{rec_yds:724.5,rec:64.5,rec_td:4.5},
+    injury_flag:null, role:"TE1 CLE — rookie breakout", competition:"None meaningful" },
+  { name:"Tucker Kraft",        team:"GB",  pos:"TE", adp:81,
+    vegas:{rec_yds:674.5,rec:59.5,rec_td:4.5},
+    injury_flag:null, role:"TE1 GB", competition:"None meaningful" },
+  { name:"Sam LaPorta",         team:"DET", pos:"TE", adp:88,
+    vegas:{rec_yds:699.5,rec:64.5,rec_td:4.5},
+    injury_flag:null, role:"TE1 DET", competition:"Amon-Ra volume competition" },
+  { name:"Dallas Goedert",      team:"PHI", pos:"TE", adp:132,
+    vegas:{rec_yds:699.5,rec:59.5,rec_td:5.5},
+    injury_flag:null, role:"TE1 PHI — reliable floor", competition:"Minimal" },
+  { name:"Travis Kelce",        team:"KC",  pos:"TE", adp:120,
+    vegas:{rec_yds:774.5,rec:74.5,rec_td:6.5},
+    injury_flag:null, role:"Elite but aging — 37 in 2026", competition:"None meaningful" },
+  { name:"Jake Ferguson",       team:"DAL", pos:"TE", adp:115,
+    vegas:{rec_yds:699.5,rec:59.5,rec_td:4.5},
+    injury_flag:null, role:"TE1 DAL", competition:"None meaningful" },
+  { name:"George Kittle",       team:"SF",  pos:"TE", adp:128,
+    vegas:{rec_yds:724.5,rec:59.5,rec_td:5.5},
+    injury_flag:null, role:"TE1 SF", competition:"None meaningful" },
+  { name:"Isaiah Likely",       team:"NYG", pos:"TE", adp:149,
+    vegas:{rec_yds:624.5,rec:54.5,rec_td:4.5},
+    injury_flag:null, role:"TE1 NYG", competition:"None meaningful" },
+  { name:"Mark Andrews",        team:"BAL", pos:"TE", adp:125,
+    vegas:{rec_yds:699.5,rec:59.5,rec_td:5.5},
+    injury_flag:null, role:"TE1 BAL", competition:"Zay Flowers volume" },
+  { name:"Dalton Kincaid",      team:"BUF", pos:"TE", adp:119,
+    vegas:{rec_yds:624.5,rec:54.5,rec_td:4.0},
+    injury_flag:null, role:"TE1 BUF", competition:"DJ Moore volume" },
+
+  // ── Additional QBs ──
+  { name:"Tyler Shough",        team:"NO",  pos:"QB", adp:138,
+    vegas:{pass_yds:3599.5,pass_td:23.5,rush_yds:249.5,rush_td:3.5},
+    injury_flag:null, role:"NO starter", competition:"None" },
+  { name:"C.J. Stroud",         team:"HOU", pos:"QB", adp:201,
+    vegas:{pass_yds:3899.5,pass_td:27.5,rush_yds:199.5,rush_td:1.5},
+    injury_flag:null, role:"HOU starter", competition:"None" },
+  { name:"Daniel Jones",        team:"IND", pos:"QB", adp:209,
+    vegas:{pass_yds:3499.5,pass_td:22.5,rush_yds:399.5,rush_td:3.5},
+    injury_flag:null, role:"IND starter", competition:"None" },
+  { name:"Cam Ward",            team:"TEN", pos:"QB", adp:210,
+    vegas:{pass_yds:3299.5,pass_td:21.5,rush_yds:349.5,rush_td:4.5},
+    injury_flag:null, role:"TEN starter rookie", competition:"None" },
+  { name:"Bryce Young",         team:"CAR", pos:"QB", adp:221,
+    vegas:{pass_yds:3199.5,pass_td:19.5,rush_yds:299.5,rush_td:2.5},
+    injury_flag:null, role:"CAR starter", competition:"None" },
+  { name:"Aaron Rodgers",       team:"PIT", pos:"QB", adp:265,
+    vegas:{pass_yds:3599.5,pass_td:24.5,rush_yds:99.5,rush_td:0.5},
+    injury_flag:null, role:"PIT starter", competition:"None" },
+  { name:"Tua Tagovailoa",      team:"ATL", pos:"QB", adp:299,
+    vegas:{pass_yds:3499.5,pass_td:23.5,rush_yds:99.5,rush_td:0.5},
+    injury_flag:null, role:"ATL starter", competition:"None" },
+  { name:"Geno Smith",          team:"NYJ", pos:"QB", adp:311,
+    vegas:{pass_yds:3299.5,pass_td:20.5,rush_yds:149.5,rush_td:1.5},
+    injury_flag:null, role:"NYJ starter", competition:"None" },
+  { name:"Deshaun Watson",      team:"CLE", pos:"QB", adp:321,
+    vegas:{pass_yds:2999.5,pass_td:18.5,rush_yds:249.5,rush_td:2.5},
+    injury_flag:{severity:"moderate",note:"Missed nearly 2 full seasons. Monitor closely."}, role:"CLE Week 1 starter", competition:"Shedeur Sanders" },
+  { name:"Sam Darnold",         team:"SEA", pos:"QB", adp:365,
+    vegas:{pass_yds:3199.5,pass_td:20.5,rush_yds:149.5,rush_td:1.5},
+    injury_flag:null, role:"SEA starter", competition:"None" },
+  { name:"Shedeur Sanders",     team:"CLE", pos:"QB", adp:316,
+    vegas:{pass_yds:2799.5,pass_td:17.5,rush_yds:199.5,rush_td:2.5},
+    injury_flag:null, role:"CLE backup/heir apparent", competition:"Deshaun Watson" },
+  { name:"Michael Penix",       team:"ATL", pos:"QB", adp:319,
+    vegas:{pass_yds:2099.5,pass_td:14.5,rush_yds:149.5,rush_td:2.5},
+    injury_flag:{severity:"high",note:"ACL recovery. Timeline unclear."}, role:"ATL backup", competition:"Tua Tagovailoa" },
+  { name:"J.J. McCarthy",       team:"MIN", pos:"QB", adp:361,
+    vegas:{pass_yds:2699.5,pass_td:17.5,rush_yds:199.5,rush_td:2.5},
+    injury_flag:{severity:"moderate",note:"Ankle — monitor."}, role:"MIN backup", competition:"Kyler Murray" },
+  { name:"Jacoby Brissett",     team:"ARI", pos:"QB", adp:249,
+    vegas:{pass_yds:2499.5,pass_td:15.5,rush_yds:199.5,rush_td:1.5},
+    injury_flag:null, role:"ARI backup", competition:"None" },
+  { name:"Kirk Cousins",        team:"LV",  pos:"QB", adp:293,
+    vegas:{pass_yds:3299.5,pass_td:22.5,rush_yds:99.5,rush_td:0.5},
+    injury_flag:null, role:"LV starter", competition:"Fernando Mendoza" },
+  { name:"Fernando Mendoza",    team:"LV",  pos:"QB", adp:307,
+    vegas:{pass_yds:2999.5,pass_td:19.5,rush_yds:249.5,rush_td:3.5},
+    injury_flag:null, role:"LV rookie", competition:"Kirk Cousins" },
+  { name:"Tyrod Taylor",        team:"GB",  pos:"QB", adp:394,
+    vegas:{pass_yds:1999.5,pass_td:12.5,rush_yds:149.5,rush_td:1.5},
+    injury_flag:null, role:"GB backup behind Love", competition:"Jordan Love" },
+  { name:"Jaxson Dart",         team:"NYG", pos:"QB", adp:105,
+    vegas:{pass_yds:3499.5,pass_td:22.5,rush_yds:349.5,rush_td:3.5},
+    injury_flag:null, role:"Mobile sophomore", competition:"None" },
+
+  // ── Additional RBs ──
+  { name:"Luther Burden",       team:"CHI", pos:"WR", adp:49,
+    vegas:{rec:74.5,rec_yds:874.5,rec_td:5.5,rush_yds:199.5,rush_td:2.5},
+    injury_flag:{severity:"low",note:"Groin — monitor."}, role:"CHI slot breakout", competition:"None meaningful" },
+  { name:"Marvin Harrison",     team:"ARI", pos:"WR", adp:73,
+    vegas:{rec:74.5,rec_yds:1049.5,rec_td:6.5},
+    injury_flag:null, role:"ARI WR1", competition:"None meaningful" },
+  { name:"Harold Fannin",       team:"CLE", pos:"TE", adp:77,
+    vegas:{rec:79.5,rec_yds:899.5,rec_td:5.5},
+    injury_flag:null, role:"CLE TE1 rookie", competition:"None" },
+  { name:"JK Dobbins",          team:"DEN", pos:"RB", adp:93,
+    vegas:{rush_yds:1049.5,rush_td:8.5,rec:34.5,rec_yds:224.5,rec_td:1.5},
+    injury_flag:null, role:"DEN lead back", competition:"Minimal" },
+  { name:"Keenan Allen",        team:"IND", pos:"WR", adp:121,
+    vegas:{rec:64.5,rec_yds:774.5,rec_td:4.5},
+    injury_flag:null, role:"IND slot vet", competition:"Minimal" },
+  { name:"Chris Rodriguez",     team:"JAX", pos:"RB", adp:128,
+    vegas:{rush_yds:899.5,rush_td:7.5,rec:24.5,rec_yds:149.5,rec_td:0.5},
+    injury_flag:null, role:"JAX lead back", competition:"Minimal" },
+  { name:"Keaton Mitchell",     team:"LAC", pos:"RB", adp:136,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:34.5,rec_yds:224.5,rec_td:1.5},
+    injury_flag:{severity:"low",note:"Undisclosed — monitor."}, role:"LAC backup", competition:"Omarion Hampton" },
+  { name:"Tyrone Tracy",        team:"NYG", pos:"RB", adp:137,
+    vegas:{rush_yds:849.5,rush_td:6.5,rec:34.5,rec_yds:224.5,rec_td:1.5},
+    injury_flag:null, role:"NYG lead back", competition:"Cam Skattebo" },
+  { name:"Tyler Allgeier",      team:"ARI", pos:"RB", adp:140,
+    vegas:{rush_yds:799.5,rush_td:6.5,rec:29.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:null, role:"ARI backup", competition:"Jeremiyah Love" },
+  { name:"Woody Marks",         team:"HOU", pos:"RB", adp:143,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:29.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:null, role:"HOU backup", competition:"David Montgomery" },
+  { name:"Deebo Samuel",        team:"SF",  pos:"WR", adp:145,
+    vegas:{rec:59.5,rec_yds:699.5,rec_td:4.5,rush_yds:199.5,rush_td:2.5},
+    injury_flag:null, role:"SF hybrid WR", competition:"Minimal" },
+  { name:"Rashid Shaheed",      team:"SEA", pos:"WR", adp:148,
+    vegas:{rec:54.5,rec_yds:724.5,rec_td:5.5},
+    injury_flag:null, role:"SEA WR2", competition:"Minimal" },
+  { name:"Tyjae Spears",        team:"TEN", pos:"RB", adp:149,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:44.5,rec_yds:299.5,rec_td:1.5},
+    injury_flag:null, role:"TEN pass-down back", competition:"Tony Pollard" },
+  { name:"Zach Charbonnet",     team:"SEA", pos:"RB", adp:150,
+    vegas:{rush_yds:799.5,rush_td:6.5,rec:29.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:{severity:"high",note:"ACL — PUP. Timeline unclear."}, role:"SEA backup", competition:"Jadarian Price" },
+  { name:"Jauan Jennings",      team:"MIN", pos:"WR", adp:155,
+    vegas:{rec:59.5,rec_yds:699.5,rec_td:4.5},
+    injury_flag:null, role:"MIN WR3", competition:"Minimal" },
+  { name:"Isiah Pacheco",       team:"DET", pos:"RB", adp:156,
+    vegas:{rush_yds:749.5,rush_td:6.5,rec:29.5,rec_yds:199.5,rec_td:1.0},
+    injury_flag:{severity:"low",note:"MCL — monitor."}, role:"DET backup", competition:"Jahmyr Gibbs" },
+  { name:"Alvin Kamara",        team:"NO",  pos:"RB", adp:159,
+    vegas:{rush_yds:699.5,rush_td:5.5,rec:49.5,rec_yds:349.5,rec_td:2.5},
+    injury_flag:{severity:"low",note:"MCL — monitor."}, role:"NO lead back", competition:"Travis Etienne" },
+  { name:"Dylan Sampson",       team:"CLE", pos:"RB", adp:164,
+    vegas:{rush_yds:649.5,rush_td:5.5,rec:24.5,rec_yds:149.5,rec_td:1.0},
+    injury_flag:null, role:"CLE backup", competition:"Quinshon Judkins" },
+  { name:"Brian Robinson",      team:"ATL", pos:"RB", adp:178,
+    vegas:{rush_yds:699.5,rush_td:6.0,rec:24.5,rec_yds:149.5,rec_td:0.5},
+    injury_flag:null, role:"ATL backup", competition:"Bijan Robinson" },
+
+  // ── Additional WRs ──
+  { name:"Brian Thomas",        team:"JAX", pos:"WR", adp:69,
+    vegas:{rec:74.5,rec_yds:999.5,rec_td:6.5},
+    injury_flag:{severity:"low",note:"Shoulder — monitor."}, role:"JAX WR1", competition:"None meaningful" },
+  { name:"Jordon Tyson",        team:"NO",  pos:"WR", adp:144,
+    vegas:{rec:59.5,rec_yds:699.5,rec_td:4.5},
+    injury_flag:{severity:"low",note:"Hamstring — monitor."}, role:"NO WR2", competition:"Minimal" },
+  { name:"Malik Willis",        team:"MIA", pos:"QB", adp:146,
+    vegas:{pass_yds:2799.5,pass_td:18.5,rush_yds:399.5,rush_td:4.5},
+    injury_flag:null, role:"MIA starter", competition:"None" },
+  { name:"Brenton Strange",     team:"JAX", pos:"TE", adp:157,
+    vegas:{rec:49.5,rec_yds:524.5,rec_td:3.5},
+    injury_flag:null, role:"JAX TE1", competition:"None" },
+  { name:"Oronde Gadsden",      team:"LAC", pos:"TE", adp:158,
+    vegas:{rec:54.5,rec_yds:574.5,rec_td:3.5},
+    injury_flag:null, role:"LAC TE2", competition:"Minimal" },
+  { name:"Juwan Johnson",       team:"NO",  pos:"TE", adp:160,
+    vegas:{rec:39.5,rec_yds:424.5,rec_td:4.5},
+    injury_flag:null, role:"NO TE1", competition:"None" },
+  { name:"Denzel Boston",       team:"CLE", pos:"WR", adp:161,
+    vegas:{rec:54.5,rec_yds:674.5,rec_td:4.5},
+    injury_flag:null, role:"CLE WR1", competition:"None meaningful" },
+  { name:"Terrance Ferguson",   team:"LAR", pos:"TE", adp:162,
+    vegas:{rec:44.5,rec_yds:474.5,rec_td:3.5},
+    injury_flag:{severity:"low",note:"General soreness — monitor."}, role:"LAR TE1", competition:"None" },
+  { name:"Tre Tucker",          team:"LV",  pos:"WR", adp:163,
+    vegas:{rec:49.5,rec_yds:624.5,rec_td:4.0},
+    injury_flag:null, role:"LV WR2", competition:"Minimal" },
+  { name:"Chig Okonkwo",        team:"WAS", pos:"TE", adp:166,
+    vegas:{rec:49.5,rec_yds:524.5,rec_td:3.5},
+    injury_flag:null, role:"WAS TE1", competition:"None" },
+  { name:"Kayshon Boutte",      team:"HOU", pos:"WR", adp:167,
+    vegas:{rec:54.5,rec_yds:674.5,rec_td:4.5},
+    injury_flag:null, role:"HOU WR2", competition:"Minimal" },
+  { name:"Adonai Mitchell",     team:"NYJ", pos:"WR", adp:217,
+    vegas:{rec:54.5,rec_yds:674.5,rec_td:4.5},
+    injury_flag:null, role:"NYJ WR2", competition:"Garrett Wilson" },
+  { name:"Jalen McMillan",      team:"TB",  pos:"WR", adp:177,
+    vegas:{rec:54.5,rec_yds:649.5,rec_td:4.5},
+    injury_flag:{severity:"low",note:"Knee — monitor."}, role:"TB WR2", competition:"Minimal" },
+  { name:"KC Concepcion",       team:"CLE", pos:"WR", adp:117,
+    vegas:{rec:59.5,rec_yds:724.5,rec_td:4.5},
+    injury_flag:null, role:"CLE WR2", competition:"Denzel Boston" },
+];
+
+// ─── CONSENSUS PPG LOOKUP ─────────────────────────────────────────────────────
+// Source: NFLFantasyEdge half-PPR season projections, Aug 24 2026
+// Consensus PPG = primary signal. ADP-curve = market-implied baseline for getValue comparison and fallback for unlisted players.
+const CONSENSUS_PPG = {
+  "Josh Allen":20.1,"Jahmyr Gibbs":18.4,"Lamar Jackson":18.1,"Bijan Robinson":18.1,
+  "Drake Maye":17.8,"Puka Nacua":17.4,"Ja'Marr Chase":17.3,"Jalen Hurts":17.3,
+  "Jayden Daniels":17.2,"Joe Burrow":17.0,"Dak Prescott":16.9,"Trevor Lawrence":16.9,
+  "Brock Purdy":16.8,"Caleb Williams":16.6,"Jaxson Dart":16.5,"Bo Nix":16.4,
+  "Justin Herbert":16.4,"Christian McCaffrey":16.2,"Patrick Mahomes":15.9,
+  "Jaxon Smith-Njigba":15.8,"Jared Goff":15.7,"Amon-Ra St. Brown":15.6,
+  "Matthew Stafford":15.6,"Jordan Love":15.5,"Baker Mayfield":15.3,"Kyler Murray":15.3,
+  "Jonathan Taylor":15.1,"Tyler Shough":15.1,"CeeDee Lamb":15.0,"Malik Willis":15.0,
+  "Sam Darnold":14.6,"Nico Collins":14.6,"James Cook":14.5,"De'Von Achane":14.3,
+  "Chase Brown":14.2,"Brock Bowers":14.1,"Justin Jefferson":13.9,"Drake London":13.9,
+  "C.J. Stroud":13.8,"A.J. Brown":13.7,"Derrick Henry":13.7,"Saquon Barkley":13.7,
+  "George Pickens":13.7,"Kenneth Walker":13.6,"Omarion Hampton":13.5,"Malik Nabers":13.2,
+  "Chris Olave":13.8,"Bryce Young":13.1,"Trey McBride":13.1,"Ashton Jeanty":13.0,
+  "Rashee Rice":12.7,"DeVonta Smith":12.7,"Ladd McConkey":12.7,"Zay Flowers":12.7,
+  "Cam Ward":12.7,"Garrett Wilson":12.5,"Tee Higgins":12.5,"Emeka Egbuka":12.4,
+  "Daniel Jones":12.4,"Tetairoa McMillan":12.4,"Geno Smith":12.4,"Mike Evans":12.3,
+  "Jaylen Waddle":12.3,"Colston Loveland":12.0,"Terry McLaurin":11.9,
+  "Parker Washington":11.8,"Fernando Mendoza":11.8,"Jeremiyah Love":11.8,
+  "Breece Hall":11.7,"Luther Burden":11.6,"D'Andre Swift":11.6,"Kyren Williams":11.6,
+  "Rome Odunze":11.6,"Travis Etienne":11.5,"Christian Watson":11.5,
+  "Javonte Williams":11.5,"Jameson Williams":11.5,"David Montgomery":11.5,
+  "Josh Jacobs":11.3,"Cam Skattebo":11.2,"Tyler Warren":11.2,"Jayden Reed":11.0,
+  "Bucky Irving":11.0,"Sam LaPorta":10.9,"Quinshon Judkins":10.9,"Brian Thomas":10.9,
+  "Davante Adams":10.7,"Marvin Harrison":10.3,"DK Metcalf":10.2,"Harold Fannin":10.0,
+  "DJ Moore":9.9,"Alec Pierce":9.9,"Carnell Tate":9.9,"Aaron Rodgers":9.8,
+  "Bhayshul Tuten":9.7,"Harold Fannin Jr.":9.5,"Tucker Kraft":9.7,"Courtland Sutton":9.7,"Chris Godwin":9.6,
+  "Josh Downs":9.6,"Jordan Addison":9.5,"Kyle Pitts":9.5,"Travis Kelce":9.5,
+  "TreVeyon Henderson":9.5,"Michael Pittman":9.5,"Khalil Shakir":9.5,
+  "Wan'Dale Robinson":9.5,"Jaylen Warren":9.5,"Matthew Golden":9.5,"Jadarian Price":9.4,
+  "Jakobi Meyers":9.4,"George Kittle":9.4,"Rhamondre Stevenson":9.4,"Makai Lemon":9.4,
+  "Michael Wilson":9.2,"Jalen Coker":9.2,"Quentin Johnston":9.1,"Dalton Kincaid":9.1,
+  "Mark Andrews":9.0,"Xavier Worthy":9.0,"Romeo Doubs":9.0,"Rico Dowdle":9.0,
+  "Brenton Strange":8.9,"J.K. Dobbins":8.9,"Tony Pollard":8.9,"Jacoby Brissett":8.9,
+  "Jake Ferguson":8.9,"Isaiah Likely":8.7,"Stefon Diggs":8.7,"KC Concepcion":8.7,
+  "Deebo Samuel":8.7,"T.J. Hockenson":8.6,"Jonathon Brooks":8.6,"Kyle Monangai":8.6,
+  "Jordan Mason":8.5,"Hunter Henry":8.5,"Kenny Gainwell":8.5,"Dalton Schultz":8.4,
+  "Chuba Hubbard":8.2,"RJ Harvey":8.0,"Chig Okonkwo":8.0,"AJ Barner":7.9,
+  "Oronde Gadsden":7.9,"Juwan Johnson":7.8,"Rashid Shaheed":7.7,"Tua Tagovailoa":7.7,
+  "Aaron Jones":7.6,"Dallas Goedert":7.6,"Blake Corum":7.5,"Denzel Boston":7.5,
+  "Chris Rodriguez":7.4,"Tyjae Spears":6.4,"Tre' Harris":6.3,"Tyrone Tracy":6.2,
+  "Jordyn Tyson":6.2,"Jauan Jennings":5.9,"Keenan Allen":5.9,"Adonai Mitchell":5.5,
+  "Jalen McMillan":7.1,"Deshaun Watson":5.7,"Shedeur Sanders":5.4,"Keaton Mitchell":5.4,
+  "Woody Marks":4.7,"Brian Robinson":3.9,"Tyler Allgeier":3.9,"Zach Charbonnet":3.7,
+  "Isiah Pacheco":6.0,"Alvin Kamara":7.0,"Terrance Ferguson":5.6,"Tre Tucker":7.0,
+  "Michael Penix":6.0,"Cousins":6.0,"Tua Tagovailoa":7.7,
+};
+
+// ADP-curve baseline (proxy for usage model, 25% weight)
+function adpCurve(adp, pos) {
+  // Market-implied median PPG at each ADP tier, calibrated to actual 2026 consensus data
+  if (pos === "QB") return adp<=36?20.0:adp<=48?18.0:adp<=72?17.2:adp<=84?17.0:adp<=108?16.5:adp<=120?16.0:adp<=144?15.5:14.5;
+  if (pos === "TE") return adp<=20?14.1:adp<=30?13.1:adp<=48?12.0:adp<=60?11.2:adp<=96?9.9:adp<=144?9.0:adp<=160?8.0:7.0;
+  if (pos === "RB") return adp<=3?18.2:adp<=6?16.2:adp<=9?15.1:adp<=24?13.9:adp<=35?12.1:adp<=47?11.3:adp<=59?9.9:adp<=71?8.5:adp<=83?8.9:adp<=95?8.4:adp<=120?8.1:adp<=155?5.5:4.5;
+  // WR
+  return adp<=12?16.5:adp<=24?13.6:adp<=36?12.7:adp<=48?12.6:adp<=60?12.1:adp<=72?11.0:adp<=84?10.0:adp<=96?9.6:adp<=108?9.2:adp<=120?9.3:adp<=160?8.5:7.0;
+}
+
+function calcVegasPPG(player) {
+  const v = player.vegas;
+  let pts = 0;
+  if (player.pos === "QB") pts = (v.pass_yds/25)+(v.pass_td*6)+(v.rush_yds*0.1)+(v.rush_td*6);
+  else if (player.pos === "RB") pts = (v.rush_yds*0.1)+(v.rush_td*6)+((v.rec||0)*0.5)+(v.rec_yds*0.1)+((v.rec_td||0)*6);
+  else pts = (v.rec_yds*0.1)+((v.rec||0)*0.5)+((v.rec_td||0)*6);
+  return pts / 17;
+}
+
+// liveData: Map of playerName → PPG from Sleeper API (null = use hardcoded)
+function calcBlendedPPG(player, liveData) {
+  const vegasPPG   = calcVegasPPG(player);
+  const curvePPG   = adpCurve(player.adp, player.pos);
+  // Consensus: live Sleeper > hardcoded NFLFantasyEdge > fallback to curve
+  const livePPG    = liveData ? liveData.get(player.name) : null;
+  const staticPPG  = CONSENSUS_PPG[player.name] ?? null;
+  const consensusPPG = livePPG ?? staticPPG ?? curvePPG;
+  // Injury PPG multiplier: context-aware scaling based on note content, not just severity tier
+  // Low/monitor flags assumed already priced into consensus — no additional haircut
+  let injuryMult = 1.0;
+  let games = 17;
+  if (player.injury_flag) {
+    const note = (player.injury_flag.note || "").toLowerCase();
+    const sev  = player.injury_flag.severity;
+    if (note.includes("non-issue") || note.includes("practiced next day") || note.includes("no structural") || note.includes("no week 1 concern")) {
+      injuryMult = 1.0; // explicitly cleared — no adjustment
+    } else if (note.includes("acl") || note.includes("pup") || note.includes("ir risk") || note.includes("cleanup surgery")) {
+      injuryMult = 0.75; games = 11; // ACL/IR risk: project ~11 games
+    } else if (note.includes("chronic") || note.includes("never played full")) {
+      injuryMult = 1.0; // history only — consensus already prices chronic risk, no additional haircut
+    } else if (note.includes("2-4wk") || note.includes("2-4 wk")) {
+      injuryMult = 0.88; games = 15; // short-term: ~2-3 games missed early
+    } else if (note.includes("turf toe")) {
+      injuryMult = 0.90; games = 15; // turf toe can linger all season
+    } else if (note.includes("missed") && (note.includes("significant") || note.includes("full season") || note.includes("2 full"))) {
+      injuryMult = 0.92; games = 15; // missed significant time but consensus likely prices some of this
+    } else if (note.includes("knee history") || note.includes("carry-count")) {
+      injuryMult = 0.95; games = 16; // workload management risk, not injury per se
+    } else if (sev === "low") {
+      injuryMult = 1.0; // all other low flags: already priced into consensus
+    } else if (sev === "moderate") {
+      injuryMult = 0.95; games = 16;
+    } else if (sev === "high") {
+      injuryMult = 0.88; games = 15;
+    }
+  }
+  const blended = consensusPPG * injuryMult;
+  const ppg = Math.round(blended * 10) / 10;
+  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round(vegasPPG*10)/10, consensusPPG: Math.round(consensusPPG*10)/10 };
+}
+
+function getTier(pos, ppg) {
+  const t = {
+    QB:[[29,"Elite"],[25,"QB1"],[21,"QB1/2"],[18,"QB2"],[0,"Stream"]],
+    RB:[[18,"Elite"],[14,"RB1"],[11,"RB1/2"],[8,"RB2"],[5,"RB3"],[0,"HC"]],
+    WR:[[16,"Elite"],[12,"WR1"],[10,"WR1/2"],[8,"WR2"],[6,"WR3"],[0,"Depth"]],
+    TE:[[12,"Elite"],[9,"TE1"],[7,"TE1/2"],[5,"TE2"],[0,"Stream"]],
+  };
+  for (const [thresh, label] of (t[pos]||t.WR)) if (ppg >= thresh) return label;
+  return "Depth";
+}
+
+function getValue(ppg, adp, pos) {
+  // exp = ADP-curve (market-implied production at this draft slot). diff = consensus minus market.
+  let exp;
+  // exp = ADP-implied production (what the market prices in at this draft slot)
+  // Signal: consensus beats market = UNDERVALUED; misses market = OVERVALUED
+  if (pos === "QB") {
+    exp = adp<=36?20.0:adp<=48?18.0:adp<=72?17.2:adp<=84?17.0:adp<=108?16.5:adp<=120?16.0:adp<=144?15.5:14.5;
+  } else if (pos === "TE") {
+    exp = adp<=20?14.1:adp<=30?13.1:adp<=48?12.0:adp<=60?11.2:adp<=96?9.9:adp<=144?9.0:adp<=160?8.0:7.0;
+  } else if (pos === "RB") {
+    exp = adp<=3?18.2:adp<=6?16.2:adp<=9?15.1:adp<=24?13.9:adp<=35?12.1:adp<=47?11.3:adp<=59?9.9:adp<=71?8.5:adp<=83?8.9:adp<=95?8.4:adp<=120?8.1:adp<=155?5.5:4.5;
+  } else {
+    exp = adp<=12?16.5:adp<=24?13.6:adp<=36?12.7:adp<=48?12.6:adp<=60?12.1:adp<=72?11.0:adp<=84?10.0:adp<=96?9.6:adp<=108?9.2:adp<=120?9.3:adp<=160?8.5:7.0;
+  }
+  const d = ppg - exp;
+  const diff = Math.round(d*10)/10;
+  if (d >= 2.0) return { label:"UNDERVALUED", shade:"strong", color:"#4ade80", bg:"#052e16", exp, diff };
+  if (d >= 0.7) return { label:"UNDERVALUED", shade:"mild",   color:"#86efac", bg:"#0a2018", exp, diff };
+  if (d <= -2.0) return { label:"OVERVALUED",  shade:"strong", color:"#f87171", bg:"#2d0a0a", exp, diff };
+  if (d <= -0.7) return { label:"OVERVALUED",  shade:"mild",   color:"#fca5a5", bg:"#1a0d0d", exp, diff };
+  return { label:"FAIR", shade:"fair", color:"#f59e0b", bg:"#1c1506", exp, diff };
+}
+
+const SEVERITY = { low:"#f59e0b", moderate:"#f97316", high:"#ef4444" };
+const PC = { QB:"#a78bfa", RB:"#34d399", WR:"#38bdf8", TE:"#f472b6" };
+const PC_BG = { QB:"#1e1b4b", RB:"#022c22", WR:"#0c2a3a", TE:"#3b0a1e" };
+
+const fmtADP = a => a % 1 === 0 ? a.toFixed(1) : a.toFixed(1);
+
+export default function DraftModel() {
+  const [search, setSearch]     = useState("");
+  const [pos, setPos]           = useState("ALL");
+  const [sortBy, setSortBy]     = useState("adp");
+  const [expanded, setExpanded] = useState(null);
+  const [myPicks, setMyPicks]   = useState(new Set());
+  const [gone, setGone]         = useState(new Set());
+  const [watch, setWatch]       = useState(new Set());
+  const [filterWatch, setFilterWatch] = useState(false);
+  const [filterGone, setFilterGone] = useState(false);
+  const [tab, setTab]           = useState("BOARD");
+  const [clockMode, setClockMode]     = useState(false);
+  const [draftSlot, setDraftSlot]     = useState(3);
+  const [teams, setTeams]             = useState(12);
+  const [clockWindow, setClockWindow] = useState(12);
+  const [clockPos, setClockPos]       = useState("ALL");
+  const [liveData, setLiveData]       = useState(null);  // Map<name, PPG> from Sleeper
+  const [dataStatus, setDataStatus]   = useState("hardcoded"); // 'hardcoded'|'fetching'|'live'|'error'
+  const [dataAge, setDataAge]         = useState(null);
+
+  const fetchLiveData = useCallback(async () => {
+    const pw = prompt("Refresh password:");
+    if (pw !== "draft2026") return;
+    setDataStatus("fetching");
+    try {
+      // Build player list for Claude to project
+      const playerList = PLAYERS.map(p => `${p.name}|${p.pos}|${p.adp}`).join("\n");
+      const prompt = `You are a fantasy football projection system. Search the web for the most current 2026 NFL fantasy football consensus projections (half-PPR scoring, 17-game season).
+
+For each player below, return their projected PPG (fantasy points per game, half-PPR, per game not season total).
+Use the latest available consensus data from FantasyPros, NFLFantasyEdge, RotoBaller, or similar sources.
+Account for any injuries, suspensions, or role changes known as of today.
+
+Players (Name|Position|ADP):
+${playerList}
+
+Respond ONLY with a JSON object mapping exact player names to PPG numbers. No markdown, no explanation, no preamble. Example:
+{"Josh Allen":20.1,"Lamar Jackson":18.2}
+
+Use the exact player names as provided. If you cannot find data for a player, omit them.`;
+
+      // web_search_20250305 is server-side — Claude handles search loop internally.
+      // Single API call returns end_turn with final answer. No manual loop needed.
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`API HTTP ${res.status}: ${errBody.slice(0,200)}`);
+      }
+      const data = await res.json();
+
+      // Collect all text blocks (response may include server_tool_use + text blocks)
+      const allText = (data.content || [])
+        .filter(b => b.type === "text")
+        .map(b => b.text)
+        .join("\n");
+
+      if (!allText) throw new Error(`No text block. stop_reason=${data.stop_reason} blocks=${JSON.stringify((data.content||[]).map(b=>b.type))}`);
+
+      // Extract JSON — strip markdown fences, find outermost {...}
+      const clean = allText.replace(/```json|```/g, "").trim();
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error(`No JSON in response. Preview: ${clean.slice(0,300)}`);
+      const projections = JSON.parse(jsonMatch[0]);
+
+      const allProjections = new Map();
+      for (const [name, ppg] of Object.entries(projections)) {
+        if (typeof ppg === "number" && ppg > 0) {
+          allProjections.set(name, Math.round(ppg * 10) / 10);
+        }
+      }
+      if (allProjections.size < 10) throw new Error(`Too few players: ${allProjections.size}. Sample: ${[...allProjections.keys()].slice(0,3).join(", ")}`);
+
+      setLiveData(allProjections);
+      setDataStatus("live");
+      setDataAge(new Date().toLocaleTimeString());
+    } catch (err) {
+      console.warn("Claude fetch failed:", err.message);
+      setDataStatus("error");
+    }
+  }, []);
+
+  const toggleMine = (name,e) => {
+    e.stopPropagation();
+    setMyPicks(prev => { const n=new Set(prev); n.has(name)?n.delete(name):(n.add(name),gone.has(name)&&setGone(g=>{const ng=new Set(g);ng.delete(name);return ng;}),setExpanded(null)); return n; });
+  };
+  const toggleGone = (name,e) => {
+    e.stopPropagation();
+    setGone(prev => { const n=new Set(prev); n.has(name)?n.delete(name):(n.add(name),myPicks.has(name)&&setMyPicks(m=>{const nm=new Set(m);nm.delete(name);return nm;}),setExpanded(null)); return n; });
+  };
+  const toggleWatch = (name,e) => {
+    e.stopPropagation();
+    setWatch(prev => { const n=new Set(prev); n.has(name)?n.delete(name):n.add(name); return n; });
+  };
+
+  const processed = useMemo(() => {
+    const seen = new Set();
+    return PLAYERS
+      .filter(p => {
+        if (seen.has(p.name)) return false;
+        seen.add(p.name);
+        return p.vegas && ((p.vegas.rec_yds||0)+(p.vegas.pass_yds||0)+(p.vegas.rush_yds||0)>0);
+      })
+      .map(p => {
+        const {ppg,season,games,vegasPPG,consensusPPG} = calcBlendedPPG(p, liveData);
+        return {...p,ppg,season,games,vegasPPG,consensusPPG,tier:getTier(p.pos,ppg),value:getValue(ppg,p.adp,p.pos)};
+      });
+  },[liveData]);
+
+  const active = useMemo(() => {
+    let arr = filterGone
+      ? processed.filter(p => gone.has(p.name) || myPicks.has(p.name))
+      : processed.filter(p => !myPicks.has(p.name) && !gone.has(p.name));
+    if (!filterGone && filterWatch) arr = arr.filter(p => watch.has(p.name));
+    if (pos!=="ALL") arr=arr.filter(p=>p.pos===pos);
+    if (search) { const q=search.toLowerCase(); arr=arr.filter(p=>p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q)); }
+    const sorted = [...arr].sort((a,b)=>sortBy==="ppg"?b.ppg-a.ppg:a.adp-b.adp);
+    // Inject tier breaks when filtering by position and sorting by ADP
+    // A tier break = PPG gap ≥1.0 between consecutive players
+    if (pos !== "ALL" && sortBy === "adp" && sorted.length > 1) {
+      let tierNum = 1;
+      const withTiers = [];
+      for (let i = 0; i < sorted.length; i++) {
+        const p = sorted[i];
+        if (i > 0) {
+          const gap = sorted[i-1].ppg - p.ppg;
+          if (gap >= 1.0) {
+            tierNum++;
+            const adpRange = `ADP ${Math.round(p.adp)}+`;
+            withTiers.push({ __tierBreak: true, tierNum, adpRange, ppg: p.ppg, key: `tier-${tierNum}` });
+          }
+        }
+        withTiers.push({ ...p, tierNum });
+      }
+      return withTiers;
+    }
+    return sorted.map(p => ({ ...p, tierNum: null }));
+  },[processed,myPicks,gone,watch,filterWatch,filterGone,pos,search,sortBy]);
+
+  // Snake pick sequence: slot 3, 12 teams → [3,22,27,46,51,...]
+  const myPickSequence = useMemo(() => {
+    const picks = [];
+    const slot = Math.max(1, Math.min(draftSlot, teams));
+    for (let round = 1; round <= 20; round++) {
+      const isEven = round % 2 === 0;
+      const pick = isEven ? (teams - slot + 1) + (round - 1) * teams : slot + (round - 1) * teams;
+      picks.push(pick);
+    }
+    return picks;
+  }, [draftSlot, teams]);
+
+  // CLOCK: rolling window of N available players by ADP
+  const clockActive = useMemo(() => {
+    if (!clockMode) return [];
+    let avail = processed
+      .filter(p => !gone.has(p.name) && !myPicks.has(p.name))
+      .sort((a, b) => a.adp - b.adp);
+    if (clockPos !== "ALL") avail = avail.filter(p => p.pos === clockPos);
+    const sliced = avail.slice(0, clockWindow);
+    // Inject tier breaks when filtering by position
+    if (clockPos !== "ALL" && sliced.length > 1) {
+      let tierNum = 1;
+      const withTiers = [];
+      for (let i = 0; i < sliced.length; i++) {
+        const p = sliced[i];
+        if (i > 0) {
+          const gap = sliced[i-1].ppg - p.ppg;
+          if (gap >= 1.0) {
+            tierNum++;
+            withTiers.push({ __tierBreak: true, tierNum, adpRange: `ADP ${Math.round(p.adp)}+`, ppg: p.ppg, key: `ctier-${tierNum}` });
+          }
+        }
+        withTiers.push({ ...p, tierNum });
+      }
+      return withTiers;
+    }
+    return sliced.map(p => ({ ...p, tierNum: null }));
+  }, [clockMode, processed, myPicks, gone, clockPos, clockWindow]);
+
+  const myPicksList = useMemo(()=>processed.filter(p=>myPicks.has(p.name)).sort((a,b)=>a.adp-b.adp),[processed,myPicks]);
+  const goneList    = useMemo(()=>processed.filter(p=>gone.has(p.name)||myPicks.has(p.name)).sort((a,b)=>a.adp-b.adp),[processed,gone,myPicks]);
+
+  const SLOTS = [
+    {key:"QB",  label:"QB",   pos:["QB"]},
+    {key:"RB1", label:"RB",   pos:["RB"]},
+    {key:"RB2", label:"RB",   pos:["RB"]},
+    {key:"WR1", label:"WR",   pos:["WR"]},
+    {key:"WR2", label:"WR",   pos:["WR"]},
+    {key:"FLX", label:"FLEX", pos:["RB","WR","TE"]},
+    {key:"TE",  label:"TE",   pos:["TE"]},
+    {key:"DE",  label:"D/ST", pos:["DE"]},
+    {key:"K",   label:"K",    pos:["K"]},
+    {key:"BE1", label:"BE",   pos:["QB","RB","WR","TE","DE","K"], bench:true},
+    {key:"BE2", label:"BE",   pos:["QB","RB","WR","TE","DE","K"], bench:true},
+    {key:"BE3", label:"BE",   pos:["QB","RB","WR","TE","DE","K"], bench:true},
+    {key:"BE4", label:"BE",   pos:["QB","RB","WR","TE","DE","K"], bench:true},
+  ];
+
+  const rosterSlots = useMemo(() => {
+    const picks = [...myPicksList];
+    const assigned = new Array(SLOTS.length).fill(null);
+    const used = new Set();
+    SLOTS.forEach((slot, si) => {
+      if (slot.bench) return;
+      const match = picks.find(p => !used.has(p.name) && slot.pos.includes(p.pos));
+      if (match) { assigned[si] = match; used.add(match.name); }
+    });
+    SLOTS.forEach((slot, si) => {
+      if (!slot.bench) return;
+      const match = picks.find(p => !used.has(p.name));
+      if (match) { assigned[si] = match; used.add(match.name); }
+    });
+    return assigned;
+  }, [myPicksList]);
+
+  return (
+    <div style={{background:"#080c14",minHeight:"100vh",fontFamily:"'JetBrains Mono','Courier New',monospace",color:"#e2e8f0",maxWidth:"100%"}}>
+
+      {/* HEADER */}
+      <div style={{background:"linear-gradient(135deg,#0f172a 0%,#1e1040 50%,#0f172a 100%)",borderBottom:"1px solid #1e293b",padding:"20px 16px 16px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,backgroundImage:"radial-gradient(ellipse at 70% 50%, #6d28d922 0%, transparent 70%)",pointerEvents:"none"}} />
+        <div style={{fontSize:10,color:"#7c3aed",letterSpacing:"0.2em",marginBottom:6,fontWeight:700}}>2026 · HALF-PPR · 6PT PASS TD · 12 TEAM</div>
+        <h1 style={{fontSize:24,fontWeight:800,margin:0,background:"linear-gradient(135deg,#f8fafc,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-0.03em"}}>Draft Value Model</h1>
+        <div style={{marginTop:6,fontSize:10,color:"#475569"}}>PPG: Consensus projection vs ADP-implied value · Injury-adjusted</div>
+        <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+          <button onClick={fetchLiveData} disabled={dataStatus==="fetching"} style={{background:dataStatus==="live"?"#0a1f0a":"#131c2e",border:`1px solid ${dataStatus==="live"?"#22c55e":dataStatus==="error"?"#ef4444":"#2d3f5a"}`,color:dataStatus==="live"?"#4ade80":dataStatus==="error"?"#f87171":"#94a3b8",borderRadius:6,padding:"5px 12px",fontSize:9,fontWeight:700,cursor:dataStatus==="fetching"?"wait":"pointer",fontFamily:"inherit",letterSpacing:"0.1em"}}>{dataStatus==="fetching"?"⟳ FETCHING...":"🔄 REFRESH DATA"}</button>
+          <span style={{fontSize:9,color:dataStatus==="live"?"#4ade80":dataStatus==="error"?"#f87171":"#334155"}}>{dataStatus==="live"?`✓ LIVE · Claude + Web Search · ${dataAge}`:dataStatus==="error"?"⚠ LIVE FETCH FAILED · USING CACHED":dataStatus==="fetching"?"":"📊 CACHED · NFLFantasyEdge Aug 24 · Tap refresh for live Claude projections"}</span>
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+            <label style={{display:'flex',alignItems:'center',gap:5,fontSize:10,color:'#94a3b8',fontWeight:600}}>
+              DRAFT SLOT
+              <input type="number" min={1} max={teams} value={draftSlot} onChange={e=>setDraftSlot(Number(e.target.value))}
+                style={{width:38,background:'#0f172a',border:'1px solid #4f6380',borderRadius:4,color:'#a78bfa',padding:'4px 6px',fontSize:12,fontFamily:'inherit',textAlign:'center',fontWeight:800}} />
+              <span style={{color:'#475569',fontSize:9}}>/ {teams}</span>
+            </label>
+            {(myPicks.size > 0 || gone.size > 0) && (
+              <button onClick={()=>{setMyPicks(new Set());setGone(new Set());}} style={{background:'#1a0a0a',border:'1px solid #7f1d1d',color:'#f87171',borderRadius:6,padding:'4px 10px',fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',letterSpacing:'0.1em'}}>
+                ↺ RESET ({myPicks.size + gone.size})
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* TAB BAR */}
+      <div style={{display:"flex",borderBottom:"1px solid #1e293b",background:"#0b1120"}}>
+        {["BOARD","ROSTER"].map(t => (
+          <button key={t} onClick={()=>setTab(t)} style={{
+            flex:1,padding:"11px 0",fontSize:11,fontWeight:700,letterSpacing:"0.1em",
+            cursor:"pointer",fontFamily:"inherit",border:"none",
+            borderBottom:`2px solid ${tab===t?"#7c3aed":"transparent"}`,
+            background:"transparent",
+            color:tab===t?"#a78bfa":"#475569"
+          }}>{t}{t==="ROSTER"&&myPicks.size>0?` (${myPicks.size})`:""}</button>
+        ))}
+      </div>
+
+      {/* ── BOARD TAB ── */}
+      {tab==="BOARD" && (
+        <>
+          {/* CONTROLS */}
+          <div style={{padding:"12px",borderBottom:"1px solid #1e293b",background:"#0b1120"}}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍  Search player or team..."
+              style={{width:"100%",boxSizing:"border-box",background:"#131c2e",border:"1px solid #2d3f5a",borderRadius:8,color:"#e2e8f0",padding:"10px 14px",fontSize:13,outline:"none",fontFamily:"inherit",marginBottom:10}} />
+            <div style={{display:"flex",gap:6,marginBottom:10}}>
+              {["ALL","QB","RB","WR","TE"].map(p => (
+                <button key={p} onClick={()=>setPos(p)} style={{
+                  flex:"1 1 0",minWidth:44,
+                  background:pos===p?(PC[p]||"#7c3aed"):PC_BG[p]||"#131c2e",
+                  border:`1px solid ${pos===p?(PC[p]||"#7c3aed"):"#2d3f5a"}`,
+                  color:pos===p?"#080c14":"#94a3b8",
+                  borderRadius:7,padding:"8px 4px",fontSize:12,cursor:"pointer",fontFamily:"inherit",fontWeight:700
+                }}>{p}</button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <div style={{display:"flex",gap:4,flex:1}}>
+                {[["ppg","PPG"],["adp","ADP"]].map(([v,l])=>(
+                  <button key={v} onClick={()=>setSortBy(v)} style={{
+                    flex:1,background:sortBy===v?"#1e293b":"transparent",
+                    border:`1px solid ${sortBy===v?"#4f6380":"#1e293b"}`,
+                    color:sortBy===v?"#e2e8f0":"#475569",
+                    borderRadius:6,padding:"7px 4px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:sortBy===v?700:400
+                  }}>↕ {l}</button>
+                ))}
+              </div>
+              <button onClick={()=>setFilterWatch(!filterWatch)} style={{
+                background:filterWatch?"#1c1205":"#131c2e",
+                border:`1px solid ${filterWatch?"#f59e0b":"#2d3f5a"}`,
+                color:filterWatch?"#fbbf24":"#475569",
+                borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
+              }}>◈ WATCH{watch.size>0?` (${watch.size})`:""}</button>
+              <button onClick={()=>setFilterGone(!filterGone)} style={{
+                background:filterGone?"#2d0a0a":"#131c2e",
+                border:`1px solid ${filterGone?"#ef4444":"#2d3f5a"}`,
+                color:filterGone?"#fca5a5":"#475569",
+                borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:600,whiteSpace:"nowrap"
+              }}>✕ GONE{(gone.size+myPicks.size)>0?` (${gone.size+myPicks.size})`:""}</button>
+              <button onClick={()=>setClockMode(!clockMode)} style={{
+                background:clockMode?"#0c1a0c":"#131c2e",
+                border:`1px solid ${clockMode?"#22c55e":"#2d3f5a"}`,
+                color:clockMode?"#4ade80":"#475569",
+                borderRadius:6,padding:"7px 10px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700,whiteSpace:"nowrap"
+              }}>⏱ CLOCK</button>
+            </div>
+          </div>
+
+
+          {/* CLOCK CONFIG STRIP */}
+          {clockMode && (
+            <div style={{background:"#081208",borderBottom:"1px solid #14532d",padding:"10px 12px",display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <span style={{fontSize:10,color:"#4ade80",fontWeight:700,letterSpacing:"0.1em"}}>⏱ ON THE CLOCK</span>
+              <label style={{fontSize:10,color:"#475569",display:"flex",alignItems:"center",gap:4}}>
+                SLOT
+                <input type="number" min={1} max={teams} value={draftSlot} onChange={e=>setDraftSlot(Number(e.target.value))}
+                  style={{width:36,background:"#0f1f0f",border:"1px solid #166534",borderRadius:4,color:"#4ade80",padding:"3px 5px",fontSize:11,fontFamily:"inherit",textAlign:"center"}} />
+              </label>
+              <label style={{fontSize:10,color:"#475569",display:"flex",alignItems:"center",gap:4}}>
+                TEAMS
+                <input type="number" min={2} max={20} value={teams} onChange={e=>setTeams(Number(e.target.value))}
+                  style={{width:36,background:"#0f1f0f",border:"1px solid #166534",borderRadius:4,color:"#4ade80",padding:"3px 5px",fontSize:11,fontFamily:"inherit",textAlign:"center"}} />
+              </label>
+              <label style={{fontSize:10,color:"#475569",display:"flex",alignItems:"center",gap:4}}>
+                SHOW
+                <input type="number" min={3} max={30} value={clockWindow} onChange={e=>setClockWindow(Number(e.target.value))}
+                  style={{width:36,background:"#0f1f0f",border:"1px solid #166534",borderRadius:4,color:"#4ade80",padding:"3px 5px",fontSize:11,fontFamily:"inherit",textAlign:"center"}} />
+              </label>
+              <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
+                {["ALL","QB","RB","WR","TE"].map(p=>(
+                  <button key={p} onClick={()=>setClockPos(p)} style={{
+                    background:clockPos===p?(PC[p]||"#22c55e"):"#0f1f0f",
+                    border:`1px solid ${clockPos===p?(PC[p]||"#22c55e"):"#166534"}`,
+                    color:clockPos===p?"#080c14":"#4ade80",
+                    borderRadius:5,padding:"4px 8px",fontSize:10,cursor:"pointer",fontFamily:"inherit",fontWeight:700
+                  }}>{p}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TABLE */}
+          <div style={{overflowX:"auto",overflowY:"auto",WebkitOverflowScrolling:"touch",height:"calc(100vh - 280px)"}}>
+            <table style={{borderCollapse:"collapse",width:"100%",tableLayout:"fixed",fontFamily:"inherit"}}>
+              <colgroup>
+                <col style={{width:80}}/>
+                <col style={{width:140}}/>
+                <col style={{width:60}}/>
+                <col style={{width:55}}/>
+                <col style={{width:65}}/>
+              </colgroup>
+              <thead style={{position:"sticky",top:0,zIndex:20,background:"#0b1120"}}>
+                <tr>
+                  <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:0,zIndex:30,background:"#0b1120"}}>STATUS</th>
+                  <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:80,zIndex:30,background:"#0b1120"}}>PLAYER</th>
+                  <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>PPG</th>
+                  <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>ADP</th>
+                  <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#475569",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TIER</th>
+                </tr>
+              </thead>
+              <tbody>
+          {(clockMode ? clockActive : active).map((p) => {
+            // Tier break divider row
+            if (p.__tierBreak) return (
+              <tr key={p.key}>
+                <td colSpan={5} style={{padding:'0'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,padding:'10px 12px 6px',background:'#0b1120'}}>
+                    <div style={{flex:1,height:'1px',background:'#1e293b'}} />
+                    <span style={{fontSize:9,fontWeight:800,letterSpacing:'0.15em',color:'#475569',whiteSpace:'nowrap'}}>
+                      TIER {p.tierNum} · {p.adpRange} · ~{p.ppg.toFixed(1)} PPG
+                    </span>
+                    <div style={{flex:1,height:'1px',background:'#1e293b'}} />
+                  </div>
+                </td>
+              </tr>
+            );
+            const isExp = expanded===p.name;
+            const posColor = PC[p.pos];
+            const posBg = PC_BG[p.pos];
+            return (
+              <React.Fragment key={p.name}>
+                <tr onClick={()=>setExpanded(isExp?null:p.name)}
+                  style={{borderBottom:'1px solid #0f1825',cursor:'pointer',background:isExp?'#111827':clockMode&&watch.has(p.name)?'#1a1400':'transparent',outline:clockMode&&watch.has(p.name)?'1px solid #f59e0b44':undefined}}>
+                  <td style={{padding:'8px 6px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:'transparent'}}>
+                      {/* Action pill buttons */}
+                      <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                        <span onClick={e=>toggleMine(p.name,e)}
+                          style={{display:'block',textAlign:'center',fontSize:10,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 6px',borderRadius:4,lineHeight:1,
+                            background:myPicks.has(p.name)?'#052e16':'transparent',
+                            border:`1.5px solid ${myPicks.has(p.name)?'#22c55e':'#16a34a'}`,
+                            color:myPicks.has(p.name)?'#22c55e':'#86efac'}}>DRAFTED</span>
+                        <span onClick={e=>toggleWatch(p.name,e)}
+                          style={{display:'block',textAlign:'center',fontSize:10,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 6px',borderRadius:4,lineHeight:1,
+                            background:watch.has(p.name)?'#1c1205':'transparent',
+                            border:`1.5px solid ${watch.has(p.name)?'#f59e0b':'#d97706'}`,
+                            color:watch.has(p.name)?'#fbbf24':'#fde68a'}}>FAV</span>
+                        <span onClick={e=>toggleGone(p.name,e)}
+                          style={{display:'block',textAlign:'center',fontSize:10,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 6px',borderRadius:4,lineHeight:1,
+                            background:gone.has(p.name)?'#2d0a0a':'transparent',
+                            border:`1.5px solid ${gone.has(p.name)?'#ef4444':'#dc2626'}`,
+                            color:gone.has(p.name)?'#ef4444':'#fca5a5'}}>GONE</span>
+                      </div>
+                  </td>
+                  <td style={{padding:'8px 8px 8px 4px',verticalAlign:'middle',position:'sticky',left:80,zIndex:10,background:'transparent'}}>
+                      <div style={{fontSize:13,fontWeight:700,color:'#f1f5f9',display:'flex',alignItems:'center',gap:6,lineHeight:1.2}}>
+                        <span style={{wordBreak:'break-word',lineHeight:1.3}}>{clockMode&&watch.has(p.name)&&<span style={{color:'#fbbf24',marginRight:3,fontSize:11}}>★</span>}{p.name}</span>
+                        <span style={{fontSize:13,fontWeight:800,color:'#64748b',flexShrink:0}}>{p.team}</span>
+                        {p.injury_flag && <span style={{width:6,height:6,borderRadius:'50%',flexShrink:0,display:'inline-block',background:SEVERITY[p.injury_flag.severity]}} />}
+                      </div>
+                      <div style={{display:'flex',alignItems:'center',gap:3,marginTop:1,flexWrap:'nowrap'}}>
+                        <span style={{background:posBg,color:posColor,fontSize:8,fontWeight:800,padding:'1px 4px',borderRadius:3,border:`1px solid ${posColor}44`,flexShrink:0}}>{p.pos}</span>
+                        <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:'2px 6px',borderRadius:4,border:`1px solid ${p.value.color}55`,whiteSpace:'nowrap',flexShrink:0}}>{p.value.label}</span>
+                      </div>
+                  </td>
+                  <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',whiteSpace:'nowrap'}}>
+                    <span style={{fontSize:15,fontWeight:800,color:posColor}}>{p.ppg}</span>
+                  </td>
+                  <td style={{padding:'10px',textAlign:'right',verticalAlign:'middle',fontSize:12,color:'#475569',fontWeight:600,whiteSpace:'nowrap'}}>{fmtADP(p.adp)}</td>
+                  <td style={{padding:'10px',textAlign:'center',verticalAlign:'middle',fontSize:11,color:'#64748b',fontWeight:600,whiteSpace:'nowrap'}}>
+                    {p.tierNum ? <span style={{background:'#1e293b',color:'#64748b',fontSize:9,fontWeight:800,padding:'2px 7px',borderRadius:10,border:'1px solid #334155',letterSpacing:'0.05em'}}>T{p.tierNum}</span> : '—'}
+                  </td>
+                </tr>
+                {isExp && (
+                  <tr>
+                    <td colSpan={5} style={{background:'#0d1424',padding:'14px 12px 14px 44px',fontSize:12}}>
+                      <div style={{marginBottom:12}}>
+                        <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.12em',marginBottom:4,fontWeight:700}}>ROLE</div>
+                        <div style={{color:'#94a3b8'}}>{p.role}</div>
+                        <div style={{color:'#475569',marginTop:3}}>vs: {p.competition}</div>
+                      </div>
+                      {p.injury_flag && (
+                        <div style={{marginBottom:12,padding:'8px 10px',background:SEVERITY[p.injury_flag.severity]+'11',borderRadius:6,border:`1px solid ${SEVERITY[p.injury_flag.severity]}33`}}>
+                          <div style={{color:SEVERITY[p.injury_flag.severity],fontSize:9,letterSpacing:'0.1em',marginBottom:4,fontWeight:800}}>⚠ {p.injury_flag.severity.toUpperCase()} INJURY</div>
+                          <div style={{color:'#94a3b8'}}>{p.injury_flag.note}</div>
+                          {p.games<17&&<div style={{color:'#f97316',marginTop:4,fontSize:11}}>Season adj: {p.games}g → {p.season} pts</div>}
+                        </div>
+                      )}
+                      <div style={{marginBottom:12}}>
+                        <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.12em',marginBottom:6,fontWeight:700}}>VEGAS LINES (DK)</div>
+                        <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
+                          {Object.entries(p.vegas).map(([k,v])=>v>0&&(
+                            <div key={k} style={{color:'#475569',fontSize:11}}>{k.replace(/_/g,' ')}: <span style={{color:'#e2e8f0',fontWeight:700}}>{v}</span></div>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
+                        <button onClick={e=>toggleMine(p.name,e)} style={{background:'#052e16',border:'1px solid #22c55e66',color:'#22c55e',borderRadius:6,padding:'8px 14px',fontSize:10,cursor:'pointer',fontFamily:'inherit',fontWeight:700}}>✓ MY PICK</button>
+                        <button onClick={e=>toggleGone(p.name,e)} style={{background:'#1a0808',border:'1px solid #7f1d1d',color:'#fca5a5',borderRadius:6,padding:'8px 14px',fontSize:10,cursor:'pointer',fontFamily:'inherit',fontWeight:700}}>✕ OFF THE BOARD</button>
+                      </div>
+                      <div style={{paddingTop:12,borderTop:'1px solid #1e293b'}}>
+                        <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.12em',marginBottom:8,fontWeight:700}}>VALUE SIGNAL</div>
+                        <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginBottom:8}}>
+                          <span style={{fontSize:12,color:'#cbd5e1'}}>Consensus: <span style={{color:'#f1f5f9',fontWeight:800}}>{p.ppg} PPG</span></span>
+                          <span style={{color:'#64748b',fontSize:12}}>vs</span>
+                          <span style={{fontSize:12,color:'#cbd5e1'}}>ADP-implied: <span style={{color:'#f1f5f9',fontWeight:800}}>{p.value.exp} PPG</span></span>
+                          <span style={{fontSize:14,fontWeight:800,color:p.value.color}}>{p.value.diff>0?'+':''}{p.value.diff}</span>
+                        </div>
+                        <div style={{fontSize:11,color:'#cbd5e1',lineHeight:1.6,padding:'10px 12px',background:'#111827',borderRadius:6,border:`1px solid ${p.value.color}44`}}>
+                          {p.value.label==='UNDERVALUED'
+                            ? `Consensus projects ${p.value.diff>0?'+':''}${p.value.diff} PPG above what ADP ${p.adp} implies. ${p.value.shade==='strong'?'Strong edge — meaningful mispricing by the market.':'Mild edge — slight discount vs. ADP expectation.'}`
+                            : p.value.label==='OVERVALUED'
+                            ? `Consensus projects ${Math.abs(p.value.diff)} PPG below what ADP ${p.adp} implies. ${p.value.shade==='strong'?'Strong signal — paying a significant premium over projected production.':'Mild signal — marginal premium, borderline FAIR.'}`
+                            : `Consensus PPG is within 0.7 PPG of ADP-implied production. No meaningful edge — draft on positional need and roster construction.`
+                          }
+                        </div>
+                        {p.injury_flag && p.games < 17 && (
+                          <div style={{fontSize:10,color:'#f97316',marginTop:6}}>Injury-adjusted · Projecting {p.games}g → {p.season} pts</div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+          </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* ── ROSTER TAB ── */}
+      {tab==="ROSTER" && (
+        <div style={{padding:"16px 12px"}}>
+          {myPicks.size===0
+            ? <div style={{color:"#334155",fontSize:12,textAlign:"center",marginTop:40}}>No picks yet — mark players ✓ on the BOARD tab.</div>
+            : <>
+                <div style={{fontSize:9,color:"#7c3aed",letterSpacing:"0.18em",fontWeight:800,marginBottom:10}}>STARTERS</div>
+                {SLOTS.filter(s=>!s.bench).map((slot,si) => {
+                  const p = rosterSlots[si];
+                  const posColor = p ? PC[p.pos] : "#334155";
+                  const posBg    = p ? PC_BG[p.pos] : "transparent";
+                  return (
+                    <div key={slot.key} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",marginBottom:6,borderRadius:7,background:p?"#0d1728":"#080c14",border:`1px solid ${p?posColor+"33":"#1e293b"}`}}>
+                      <span style={{fontSize:9,fontWeight:800,color:"#475569",letterSpacing:"0.1em",width:36,flexShrink:0}}>{slot.label}</span>
+                      {p ? <>
+                        <span style={{background:posBg,color:posColor,fontSize:9,fontWeight:800,padding:"1px 5px",borderRadius:3,border:`1px solid ${posColor}44`,flexShrink:0}}>{p.pos}</span>
+                        <span style={{fontSize:14,fontWeight:700,color:"#f1f5f9",flex:1}}>{p.name}</span>
+                        <span style={{fontSize:10,color:"#475569",flexShrink:0}}>{p.team}</span>
+                        <span style={{fontSize:13,fontWeight:800,color:posColor,flexShrink:0}}>{p.ppg}</span>
+                        <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:"2px 6px",borderRadius:4,border:`1px solid ${p.value.color}44`,whiteSpace:"nowrap",flexShrink:0}}>{p.value.label}</span>
+                      </> : <span style={{fontSize:12,color:"#334155",fontStyle:"italic"}}>Empty</span>}
+                    </div>
+                  );
+                })}
+
+                <div style={{fontSize:9,color:"#475569",letterSpacing:"0.18em",fontWeight:800,margin:"18px 0 10px"}}>BENCH</div>
+                {SLOTS.filter(s=>s.bench).map((slot,bi) => {
+                  const si = SLOTS.findIndex(s=>s.bench) + bi;
+                  const p = rosterSlots[si];
+                  const posColor = p ? PC[p.pos] : "#334155";
+                  const posBg    = p ? PC_BG[p.pos] : "transparent";
+                  return (
+                    <div key={slot.key} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",marginBottom:6,borderRadius:7,background:p?"#0b0f1a":"#080c14",border:`1px solid ${p?"#1e293b":"#0f1825"}`}}>
+                      <span style={{fontSize:9,fontWeight:800,color:"#334155",letterSpacing:"0.1em",width:36,flexShrink:0}}>BE</span>
+                      {p ? <>
+                        <span style={{background:posBg,color:posColor,fontSize:9,fontWeight:800,padding:"1px 5px",borderRadius:3,border:`1px solid ${posColor}44`,flexShrink:0}}>{p.pos}</span>
+                        <span style={{fontSize:14,fontWeight:700,color:"#94a3b8",flex:1}}>{p.name}</span>
+                        <span style={{fontSize:10,color:"#475569",flexShrink:0}}>{p.team}</span>
+                        <span style={{fontSize:13,fontWeight:800,color:posColor,flexShrink:0}}>{p.ppg}</span>
+                      </> : <span style={{fontSize:12,color:"#1e293b",fontStyle:"italic"}}>Empty</span>}
+                    </div>
+                  );
+                })}
+
+                {(()=>{
+                  const starters = SLOTS.filter(s=>!s.bench).map((_,si)=>rosterSlots[si]).filter(Boolean);
+                  const total = starters.reduce((sum,p)=>sum+p.ppg,0).toFixed(1);
+                  return (
+                    <div style={{marginTop:16,padding:"10px 12px",borderRadius:7,background:"#0d1424",border:"1px solid #1e293b",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:10,color:"#475569",letterSpacing:"0.1em"}}>PROJECTED STARTER PPG</span>
+                      <span style={{fontSize:18,fontWeight:800,color:"#a78bfa"}}>{total}</span>
+                    </div>
+                  );
+                })()}
+              </>
+          }
+        </div>
+      )}
+
+      <div style={{padding:"16px 12px",borderTop:"1px solid #0f1825",fontSize:9,color:"#1e293b",lineHeight:1.6}}>
+        DK Vegas props Aug 2026 · Half-PPR · Injury adj: moderate −2g, high −4g · UNDERVALUED/OVERVALUED = ±0.7 PPG vs ADP expectation · bright = strong signal (≥2.0 PPG), muted = mild (0.7–2.0)
+      </div>
+    </div>
+  );
+}
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<DraftBoard />);
+  </script>
+</body>
+</html>
