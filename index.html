@@ -598,6 +598,58 @@ const PLAYERS = [
   { name:"KC Concepcion",       team:"CLE", pos:"WR", adp:117,
     vegas:{rec:59.5,rec_yds:724.5,rec_td:4.5},
     injury_flag:null, role:"CLE WR2", competition:"Denzel Boston" },
+
+  // ── D/ST ──
+  { name:"Broncos D/ST",        team:"DEN", pos:"DE", adp:401, vegas:{},
+    injury_flag:null, role:"Top-ranked defense", competition:"None" },
+  { name:"Steelers D/ST",       team:"PIT", pos:"DE", adp:407, vegas:{},
+    injury_flag:null, role:"Elite pass rush", competition:"None" },
+  { name:"Eagles D/ST",         team:"PHI", pos:"DE", adp:413, vegas:{},
+    injury_flag:null, role:"Deep, disruptive front", competition:"None" },
+  { name:"Vikings D/ST",        team:"MIN", pos:"DE", adp:419, vegas:{},
+    injury_flag:null, role:"Aggressive scheme, high takeaways", competition:"None" },
+  { name:"Ravens D/ST",         team:"BAL", pos:"DE", adp:425, vegas:{},
+    injury_flag:null, role:"Consistent playoff-caliber unit", competition:"None" },
+  { name:"Texans D/ST",         team:"HOU", pos:"DE", adp:431, vegas:{},
+    injury_flag:null, role:"Ascending young defense", competition:"None" },
+  { name:"49ers D/ST",          team:"SF",  pos:"DE", adp:437, vegas:{},
+    injury_flag:null, role:"Talented, injury-dependent", competition:"None" },
+  { name:"Packers D/ST",        team:"GB",  pos:"DE", adp:443, vegas:{},
+    injury_flag:null, role:"Solid all-around unit", competition:"None" },
+  { name:"Chiefs D/ST",         team:"KC",  pos:"DE", adp:449, vegas:{},
+    injury_flag:null, role:"Steady, low-ceiling defense", competition:"None" },
+  { name:"Bills D/ST",          team:"BUF", pos:"DE", adp:455, vegas:{},
+    injury_flag:null, role:"Middling takeaway rate", competition:"None" },
+  { name:"Lions D/ST",          team:"DET", pos:"DE", adp:461, vegas:{},
+    injury_flag:null, role:"Offense-first roster build", competition:"None" },
+  { name:"Jets D/ST",           team:"NYJ", pos:"DE", adp:467, vegas:{},
+    injury_flag:null, role:"Streaming-caliber unit", competition:"None" },
+
+  // ── K ──
+  { name:"Brandon Aubrey",      team:"DAL", pos:"K", adp:473, vegas:{},
+    injury_flag:null, role:"Elite leg, high-volume offense", competition:"None" },
+  { name:"Chase McLaughlin",    team:"TB",  pos:"K", adp:479, vegas:{},
+    injury_flag:null, role:"Accurate, red-zone-heavy offense", competition:"None" },
+  { name:"Jake Bates",          team:"DET", pos:"K", adp:485, vegas:{},
+    injury_flag:null, role:"Big leg, prolific offense", competition:"None" },
+  { name:"Cameron Dicker",      team:"LAC", pos:"K", adp:491, vegas:{},
+    injury_flag:null, role:"Reliable, high-attempt volume", competition:"None" },
+  { name:"Younghoe Koo",        team:"ATL", pos:"K", adp:497, vegas:{},
+    injury_flag:null, role:"Consistent veteran leg", competition:"None" },
+  { name:"Harrison Butker",     team:"KC",  pos:"K", adp:503, vegas:{},
+    injury_flag:null, role:"Steady playoff-tested kicker", competition:"None" },
+  { name:"Jason Sanders",       team:"MIA", pos:"K", adp:509, vegas:{},
+    injury_flag:null, role:"Average volume, mid-tier offense", competition:"None" },
+  { name:"Ka'imi Fairbairn",    team:"HOU", pos:"K", adp:515, vegas:{},
+    injury_flag:null, role:"Solid accuracy, ascending offense", competition:"None" },
+  { name:"Wil Lutz",            team:"DEN", pos:"K", adp:521, vegas:{},
+    injury_flag:null, role:"Veteran leg, run-heavy offense", competition:"None" },
+  { name:"Tyler Bass",          team:"BUF", pos:"K", adp:527, vegas:{},
+    injury_flag:null, role:"High-powered offense volume", competition:"None" },
+  { name:"Matt Gay",            team:"WAS", pos:"K", adp:533, vegas:{},
+    injury_flag:null, role:"Streaming-caliber kicker", competition:"None" },
+  { name:"Joey Slye",           team:"NE",  pos:"K", adp:539, vegas:{},
+    injury_flag:null, role:"Streaming-caliber kicker", competition:"None" },
 ];
 
 // ─── CONSENSUS PPG LOOKUP ─────────────────────────────────────────────────────
@@ -657,6 +709,8 @@ function adpCurve(adp, pos) {
   if (pos === "QB") return adp<=36?20.0:adp<=48?18.0:adp<=72?17.2:adp<=84?17.0:adp<=108?16.5:adp<=120?16.0:adp<=144?15.5:14.5;
   if (pos === "TE") return adp<=20?14.1:adp<=30?13.1:adp<=48?12.0:adp<=60?11.2:adp<=96?9.9:adp<=144?9.0:adp<=160?8.0:7.0;
   if (pos === "RB") return adp<=3?18.2:adp<=6?16.2:adp<=9?15.1:adp<=24?13.9:adp<=35?12.1:adp<=47?11.3:adp<=59?9.9:adp<=71?8.5:adp<=83?8.9:adp<=95?8.4:adp<=120?8.1:adp<=155?5.5:4.5;
+  if (pos === "DE") return adp<=407?9.2:adp<=419?8.7:adp<=431?8.1:adp<=443?7.5:adp<=455?6.9:6.3;
+  if (pos === "K")  return adp<=479?9.3:adp<=491?8.9:adp<=503?8.5:adp<=515?8.0:adp<=527?7.5:7.0;
   // WR
   return adp<=12?16.5:adp<=24?13.6:adp<=36?12.7:adp<=48?12.6:adp<=60?12.1:adp<=72?11.0:adp<=84?10.0:adp<=96?9.6:adp<=108?9.2:adp<=120?9.3:adp<=160?8.5:7.0;
 }
@@ -666,6 +720,7 @@ function calcVegasPPG(player) {
   let pts = 0;
   if (player.pos === "QB") pts = (v.pass_yds/25)+(v.pass_td*6)+(v.rush_yds*0.1)+(v.rush_td*6);
   else if (player.pos === "RB") pts = (v.rush_yds*0.1)+(v.rush_td*6)+((v.rec||0)*0.5)+(v.rec_yds*0.1)+((v.rec_td||0)*6);
+  else if (player.pos === "DE" || player.pos === "K") pts = 0; // scored off ADP curve, not offensive Vegas props
   else pts = (v.rec_yds*0.1)+((v.rec||0)*0.5)+((v.rec_td||0)*6);
   return pts / 17;
 }
@@ -715,6 +770,8 @@ function getTier(pos, ppg) {
     RB:[[18,"Elite"],[14,"RB1"],[11,"RB1/2"],[8,"RB2"],[5,"RB3"],[0,"HC"]],
     WR:[[16,"Elite"],[12,"WR1"],[10,"WR1/2"],[8,"WR2"],[6,"WR3"],[0,"Depth"]],
     TE:[[12,"Elite"],[9,"TE1"],[7,"TE1/2"],[5,"TE2"],[0,"Stream"]],
+    DE:[[9,"Elite"],[7.8,"DST1"],[7.0,"DST1/2"],[6.3,"DST2"],[0,"Stream"]],
+    K:[[9.2,"Elite"],[8.6,"K1"],[8.0,"K1/2"],[7.3,"K2"],[0,"Stream"]],
   };
   for (const [thresh, label] of (t[pos]||t.WR)) if (ppg >= thresh) return label;
   return "Depth";
@@ -731,6 +788,10 @@ function getValue(ppg, adp, pos) {
     exp = adp<=20?14.1:adp<=30?13.1:adp<=48?12.0:adp<=60?11.2:adp<=96?9.9:adp<=144?9.0:adp<=160?8.0:7.0;
   } else if (pos === "RB") {
     exp = adp<=3?18.2:adp<=6?16.2:adp<=9?15.1:adp<=24?13.9:adp<=35?12.1:adp<=47?11.3:adp<=59?9.9:adp<=71?8.5:adp<=83?8.9:adp<=95?8.4:adp<=120?8.1:adp<=155?5.5:4.5;
+  } else if (pos === "DE") {
+    exp = adp<=407?9.2:adp<=419?8.7:adp<=431?8.1:adp<=443?7.5:adp<=455?6.9:6.3;
+  } else if (pos === "K") {
+    exp = adp<=479?9.3:adp<=491?8.9:adp<=503?8.5:adp<=515?8.0:adp<=527?7.5:7.0;
   } else {
     exp = adp<=12?16.5:adp<=24?13.6:adp<=36?12.7:adp<=48?12.6:adp<=60?12.1:adp<=72?11.0:adp<=84?10.0:adp<=96?9.6:adp<=108?9.2:adp<=120?9.3:adp<=160?8.5:7.0;
   }
@@ -744,8 +805,8 @@ function getValue(ppg, adp, pos) {
 }
 
 const SEVERITY = { low:"#f59e0b", moderate:"#f97316", high:"#ef4444" };
-const PC = { QB:"#a78bfa", RB:"#34d399", WR:"#38bdf8", TE:"#f472b6" };
-const PC_BG = { QB:"#1e1b4b", RB:"#022c22", WR:"#0c2a3a", TE:"#3b0a1e" };
+const PC = { QB:"#a78bfa", RB:"#34d399", WR:"#38bdf8", TE:"#f472b6", DE:"#fb923c", K:"#facc15" };
+const PC_BG = { QB:"#1e1b4b", RB:"#022c22", WR:"#0c2a3a", TE:"#3b0a1e", DE:"#431407", K:"#422006" };
 
 const fmtADP = a => a % 1 === 0 ? a.toFixed(1) : a.toFixed(1);
 
@@ -785,6 +846,7 @@ function DraftBoard() {
       .filter(p => {
         if (seen.has(p.name)) return false;
         seen.add(p.name);
+        if (p.pos === "DE" || p.pos === "K") return true;
         return p.vegas && ((p.vegas.rec_yds||0)+(p.vegas.pass_yds||0)+(p.vegas.rush_yds||0)>0);
       })
       .map(p => {
@@ -947,7 +1009,7 @@ function DraftBoard() {
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍  Search player or team..."
               style={{width:"100%",boxSizing:"border-box",background:"#131c2e",border:"1px solid #2d3f5a",borderRadius:8,color:"#e2e8f0",padding:"10px 14px",fontSize:13,outline:"none",fontFamily:"inherit",marginBottom:10}} />
             <div style={{display:"flex",gap:6,marginBottom:10}}>
-              {["ALL","QB","RB","WR","TE"].map(p => (
+              {["ALL","QB","RB","WR","TE","DE","K"].map(p => (
                 <button key={p} onClick={()=>setPos(p)} style={{
                   flex:"1 1 0",minWidth:44,
                   background:pos===p?(PC[p]||"#7c3aed"):PC_BG[p]||"#131c2e",
@@ -1010,7 +1072,7 @@ function DraftBoard() {
                   style={{width:36,background:"#0f1f0f",border:"1px solid #166534",borderRadius:4,color:"#4ade80",padding:"3px 5px",fontSize:11,fontFamily:"inherit",textAlign:"center"}} />
               </label>
               <div style={{display:"flex",gap:4,marginLeft:"auto"}}>
-                {["ALL","QB","RB","WR","TE"].map(p=>(
+                {["ALL","QB","RB","WR","TE","DE","K"].map(p=>(
                   <button key={p} onClick={()=>setClockPos(p)} style={{
                     background:clockPos===p?(PC[p]||"#22c55e"):"#0f1f0f",
                     border:`1px solid ${clockPos===p?(PC[p]||"#22c55e"):"#166534"}`,
@@ -1024,10 +1086,11 @@ function DraftBoard() {
 
           {/* TABLE */}
           <div style={{overflowX:"auto",overflowY:"auto",WebkitOverflowScrolling:"touch",height:"calc(100vh - 280px)"}}>
-            <table style={{borderCollapse:"collapse",width:"100%",maxWidth:1100,tableLayout:"fixed",fontFamily:"inherit"}}>
+            <table style={{borderCollapse:"collapse",width:"100%",maxWidth:1100,margin:"0 auto",tableLayout:"fixed",fontFamily:"inherit"}}>
               <colgroup>
                 <col style={{width:170}}/>
-                <col style={{width:160}}/>
+                <col style={{width:140}}/>
+                <col style={{width:60}}/>
                 <col style={{width:110}}/>
                 <col style={{width:60}}/>
                 <col style={{width:55}}/>
@@ -1037,6 +1100,7 @@ function DraftBoard() {
                 <tr>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:0,zIndex:30,background:"#0b1120"}}>STATUS</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:170,zIndex:30,background:"#0b1120"}}>PLAYER</th>
+                  <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TEAM</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>VALUE</th>
                   <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>PPG</th>
                   <th style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>ADP</th>
@@ -1048,7 +1112,7 @@ function DraftBoard() {
             // Tier break divider row
             if (p.__tierBreak) return (
               <tr key={p.key}>
-                <td colSpan={6} style={{padding:'0'}}>
+                <td colSpan={7} style={{padding:'0'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8,padding:'10px 12px 6px',background:'#0b1120'}}>
                     <div style={{flex:1,height:'1px',background:'#1e293b'}} />
                     <span style={{fontSize:9,fontWeight:800,letterSpacing:'0.15em',color:'#94a3b8',whiteSpace:'nowrap'}}>
@@ -1066,35 +1130,40 @@ function DraftBoard() {
               <React.Fragment key={p.name}>
                 <tr onClick={()=>setExpanded(isExp?null:p.name)}
                   style={{borderBottom:'1px solid #0f1825',cursor:'pointer',background:isExp?'#111827':clockMode&&watch.has(p.name)?'#1a1400':'transparent',outline:clockMode&&watch.has(p.name)?'1px solid #f59e0b44':undefined}}>
-                  <td style={{padding:'8px 6px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:'transparent'}}>
+                  <td style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:0,zIndex:10,background:'transparent'}}>
                       {/* Action pill buttons */}
                       <div style={{display:'flex',flexDirection:'row',gap:4}}>
                         <span onClick={e=>toggleMine(p.name,e)}
+                          title="Mark as drafted"
                           style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
                             background:myPicks.has(p.name)?'#052e16':'transparent',
                             border:`1.5px solid ${myPicks.has(p.name)?'#22c55e':'#16a34a'}`,
                             color:myPicks.has(p.name)?'#22c55e':'#86efac'}}>DRAFTED</span>
                         <span onClick={e=>toggleWatch(p.name,e)}
+                          title="Add to watch list"
                           style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
                             background:watch.has(p.name)?'#1c1205':'transparent',
                             border:`1.5px solid ${watch.has(p.name)?'#f59e0b':'#d97706'}`,
                             color:watch.has(p.name)?'#fbbf24':'#fde68a'}}>FAV</span>
                         <span onClick={e=>toggleGone(p.name,e)}
+                          title="Mark off the board"
                           style={{display:'block',textAlign:'center',fontSize:9,fontWeight:700,cursor:'pointer',userSelect:'none',padding:'4px 5px',borderRadius:4,lineHeight:1,flex:'1 1 0',
                             background:gone.has(p.name)?'#2d0a0a':'transparent',
                             border:`1.5px solid ${gone.has(p.name)?'#ef4444':'#dc2626'}`,
                             color:gone.has(p.name)?'#ef4444':'#fca5a5'}}>GONE</span>
                       </div>
                   </td>
-                  <td style={{padding:'8px 8px 8px 4px',verticalAlign:'middle',position:'sticky',left:170,zIndex:10,background:'transparent'}}>
+                  <td style={{padding:'8px 10px',verticalAlign:'middle',position:'sticky',left:170,zIndex:10,background:'transparent'}}>
                       <div style={{fontSize:13,fontWeight:700,color:'#f1f5f9',display:'flex',alignItems:'center',gap:6,lineHeight:1.2}}>
                         <span style={{wordBreak:'break-word',lineHeight:1.3}}>{clockMode&&watch.has(p.name)&&<span style={{color:'#fbbf24',marginRight:3,fontSize:11}}>★</span>}{p.name}</span>
-                        <span style={{fontSize:13,fontWeight:800,color:'#94a3b8',flexShrink:0}}>{p.team}</span>
                         {p.injury_flag && <span style={{width:6,height:6,borderRadius:'50%',flexShrink:0,display:'inline-block',background:SEVERITY[p.injury_flag.severity]}} />}
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:3,marginTop:1,flexWrap:'nowrap'}}>
                         <span style={{background:posBg,color:posColor,fontSize:8,fontWeight:800,padding:'1px 4px',borderRadius:3,border:`1px solid ${posColor}44`,flexShrink:0}}>{p.pos}</span>
                       </div>
+                  </td>
+                  <td style={{padding:'10px',verticalAlign:'middle'}}>
+                    <span style={{fontSize:12,fontWeight:800,color:'#94a3b8'}}>{p.team}</span>
                   </td>
                   <td style={{padding:'10px',verticalAlign:'middle'}}>
                     <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:'2px 6px',borderRadius:4,border:`1px solid ${p.value.color}55`,whiteSpace:'nowrap'}}>{p.value.label}</span>
@@ -1109,7 +1178,7 @@ function DraftBoard() {
                 </tr>
                 {isExp && (
                   <tr>
-                    <td colSpan={6} style={{background:'#0d1424',padding:'14px 12px 14px 44px',fontSize:12}}>
+                    <td colSpan={7} style={{background:'#0d1424',padding:'14px 12px 14px 44px',fontSize:12}}>
                       <div style={{marginBottom:12}}>
                         <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.12em',marginBottom:4,fontWeight:700}}>ROLE</div>
                         <div style={{color:'#94a3b8'}}>{p.role}</div>
