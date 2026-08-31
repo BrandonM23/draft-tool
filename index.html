@@ -18,10 +18,13 @@
       #root { zoom: 1.05; }
     }
     .label-icon { display: none; }
+    .value-short { display: none; }
     @media (max-width: 679px) {
       .frozen-col { position: static !important; left: auto !important; }
       .label-full { display: none !important; }
       .label-icon { display: inline !important; font-size: 12px !important; }
+      .value-full { display: none !important; }
+      .value-short { display: inline !important; font-size: 10px !important; }
       .col-status { width: 68px !important; }
       .col-player { width: 92px !important; }
       .col-team { width: 34px !important; }
@@ -31,6 +34,7 @@
       .col-adp { width: 46px !important; }
       .cell-ppg, .cell-adp { padding: 8px 4px !important; }
       .cell-ppg span { font-size: 13px !important; }
+      .cell-injury, .cell-value { padding: 8px 2px !important; }
       table td, table th { white-space: normal !important; }
     }
   </style>
@@ -1187,13 +1191,19 @@ function DraftBoard() {
                   <td style={{padding:'10px',verticalAlign:'middle'}}>
                     <span style={{fontSize:12,fontWeight:800,color:'#94a3b8'}}>{p.team}</span>
                   </td>
-                  <td style={{padding:'10px',textAlign:'center',verticalAlign:'middle'}}>
+                  <td className="cell-injury" style={{padding:'10px',textAlign:'center',verticalAlign:'middle'}}>
                     {p.injury_flag && p.injury_flag.current !== false
-                      ? <span style={{fontSize:9,fontWeight:800,color:SEVERITY[p.injury_flag.severity],background:SEVERITY[p.injury_flag.severity]+'22',padding:'2px 7px',borderRadius:10,border:`1px solid ${SEVERITY[p.injury_flag.severity]}66`,letterSpacing:'0.05em',whiteSpace:'nowrap'}}>{p.injury_flag.severity.toUpperCase()}</span>
+                      ? <span style={{fontSize:9,fontWeight:800,color:SEVERITY[p.injury_flag.severity],background:SEVERITY[p.injury_flag.severity]+'22',padding:'2px 7px',borderRadius:10,border:`1px solid ${SEVERITY[p.injury_flag.severity]}66`,letterSpacing:'0.05em',whiteSpace:'nowrap'}}>
+                          <span className="value-full">{p.injury_flag.severity.toUpperCase()}</span>
+                          <span className="value-short">{p.injury_flag.severity==="moderate"?"MOD":p.injury_flag.severity.toUpperCase()}</span>
+                        </span>
                       : <span style={{color:'#94a3b8'}}>—</span>}
                   </td>
-                  <td style={{padding:'10px',verticalAlign:'middle'}}>
-                    <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:'2px 6px',borderRadius:4,border:`1px solid ${p.value.color}55`,whiteSpace:'nowrap'}}>{p.value.label}</span>
+                  <td className="cell-value" style={{padding:'10px',verticalAlign:'middle'}}>
+                    <span style={{fontSize:11,fontWeight:800,color:p.value.color,background:p.value.bg,padding:'2px 6px',borderRadius:4,border:`1px solid ${p.value.color}55`,whiteSpace:'nowrap'}}>
+                      <span className="value-full">{p.value.label}</span>
+                      <span className="value-short">{p.value.label==="UNDERVALUED"?"UNDER":p.value.label==="OVERVALUED"?"OVER":"FAIR"}</span>
+                    </span>
                   </td>
                   <td className="cell-ppg" style={{padding:'10px',textAlign:'right',verticalAlign:'middle',whiteSpace:'nowrap'}}>
                     <span style={{fontSize:15,fontWeight:800,color:posColor}}>{p.ppg}</span>
