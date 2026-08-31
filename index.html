@@ -96,7 +96,7 @@ const PLAYERS = [
     injury_flag:null, role:"Workhorse RB1, 3-down back", competition:"None meaningful" },
   { name:"Christian McCaffrey", team:"SF",  pos:"RB", adp:6,
     vegas:{rush_yds:1249.5,rush_td:10.5,rec:79.5,rec_yds:624.5,rec_td:3.5},
-    injury_flag:{severity:"moderate", note:"Missed significant time in 2025. Monitor closely."},
+    injury_flag:{severity:"moderate", current:false, note:"Missed significant time in 2025. Monitor closely."},
     role:"Elite 3-down back when healthy", competition:"None meaningful" },
   { name:"Jonathan Taylor",     team:"IND", pos:"RB", adp:8,
     vegas:{rush_yds:1424.5,rush_td:14.5,rec:44.5,rec_yds:324.5,rec_td:1.5},
@@ -182,7 +182,7 @@ const PLAYERS = [
     injury_flag:null, role:"Lead back TEN", competition:"Minimal" },
   { name:"Jonathon Brooks",     team:"CAR", pos:"RB", adp:75,
     vegas:{rush_yds:724.5,rush_td:5.5,rec:39.5,rec_yds:199.5,rec_td:1.0},
-    injury_flag:{severity:"moderate", note:"Knee history — returned 2025 but still carry-count risk."},
+    injury_flag:{severity:"moderate", current:false, note:"Knee history — returned 2025 but still carry-count risk."},
     role:"Lead back CAR if healthy", competition:"Chuba Hubbard" },
   { name:"Rhamondre Stevenson", team:"NE",  pos:"RB", adp:76,
     vegas:{rush_yds:774.5,rush_td:6.5,rec:39.5,rec_yds:224.5,rec_td:1.0},
@@ -225,7 +225,7 @@ const PLAYERS = [
   // ── WRs ──
   { name:"Ja'Marr Chase",       team:"CIN", pos:"WR", adp:3,
     vegas:{rec_yds:1524.5,rec:118.5,rec_td:12.5},
-    injury_flag:{severity:"low", note:"Knee hyperextension Aug 25 — no structural damage, practiced next day. Non-issue."},
+    injury_flag:null,
     role:"Undisputed WR1 CIN", competition:"Tee Higgins" },
   { name:"Puka Nacua",          team:"LAR", pos:"WR", adp:4,
     vegas:{rec_yds:1350.5,rec:106.5,rec_td:8.5},
@@ -247,7 +247,7 @@ const PLAYERS = [
     injury_flag:null, role:"WR1 ATL", competition:"None meaningful; QB situation murky" },
   { name:"Nico Collins",        team:"HOU", pos:"WR", adp:15,
     vegas:{rec_yds:1074.5,rec:84.5,rec_td:7.5},
-    injury_flag:{severity:"high", note:"Chronic injury history — has never played full 17-game season."},
+    injury_flag:{severity:"high", current:false, note:"Chronic injury history — has never played full 17-game season."},
     role:"WR1 when healthy", competition:"Tank Dell, Diontae Johnson" },
   { name:"Rashee Rice",         team:"KC",  pos:"WR", adp:15,
     vegas:{rec_yds:1074.5,rec:84.5,rec_td:7.5},
@@ -273,7 +273,7 @@ const PLAYERS = [
     injury_flag:null, role:"WR1 CAR — Rookie of Year", competition:"None meaningful" },
   { name:"Tee Higgins",         team:"CIN", pos:"WR", adp:35,
     vegas:{rec_yds:974.5,rec:74.5,rec_td:6.5},
-    injury_flag:{severity:"high", note:"Chronic injury history — has never played full season."},
+    injury_flag:{severity:"high", current:false, note:"Chronic injury history — has never played full season."},
     role:"WR2 CIN when healthy", competition:"Ja'Marr Chase" },
   { name:"Ladd McConkey",       team:"LAC", pos:"WR", adp:39,
     vegas:{rec_yds:899.5,rec:71.5,rec_td:5.5},
@@ -394,7 +394,7 @@ const PLAYERS = [
   // ── TEs ──
   { name:"Brock Bowers",        team:"LV",  pos:"TE", adp:16,
     vegas:{rec_yds:924.5,rec:84.5,rec_td:5.5},
-    injury_flag:{severity:"low", note:"Played through injury in 2025, missed 5 games. Monitor."},
+    injury_flag:{severity:"low", current:false, note:"Played through injury in 2025, missed 5 games. Monitor."},
     role:"Focal point LV offense", competition:"None meaningful" },
   { name:"Trey McBride",        team:"ARI", pos:"TE", adp:25,
     vegas:{rec_yds:974.5,rec:94.5,rec_td:9.5},
@@ -467,7 +467,7 @@ const PLAYERS = [
     injury_flag:null, role:"NYJ starter", competition:"None" },
   { name:"Deshaun Watson",      team:"CLE", pos:"QB", adp:321,
     vegas:{pass_yds:2999.5,pass_td:18.5,rush_yds:249.5,rush_td:2.5},
-    injury_flag:{severity:"moderate",note:"Missed nearly 2 full seasons. Monitor closely."}, role:"CLE Week 1 starter", competition:"Shedeur Sanders" },
+    injury_flag:{severity:"moderate",current:false,note:"Missed nearly 2 full seasons. Monitor closely."}, role:"CLE Week 1 starter", competition:"Shedeur Sanders" },
   { name:"Sam Darnold",         team:"SEA", pos:"QB", adp:365,
     vegas:{pass_yds:3199.5,pass_td:20.5,rush_yds:149.5,rush_td:1.5},
     injury_flag:null, role:"SEA starter", competition:"None" },
@@ -1171,7 +1171,7 @@ function DraftBoard() {
                     <span style={{fontSize:12,fontWeight:800,color:'#94a3b8'}}>{p.team}</span>
                   </td>
                   <td style={{padding:'10px',textAlign:'center',verticalAlign:'middle'}}>
-                    {p.injury_flag
+                    {p.injury_flag && p.injury_flag.current !== false
                       ? <span style={{fontSize:9,fontWeight:800,color:SEVERITY[p.injury_flag.severity],background:SEVERITY[p.injury_flag.severity]+'22',padding:'2px 7px',borderRadius:10,border:`1px solid ${SEVERITY[p.injury_flag.severity]}66`,letterSpacing:'0.05em',whiteSpace:'nowrap'}}>{p.injury_flag.severity.toUpperCase()}</span>
                       : <span style={{color:'#94a3b8'}}>—</span>}
                   </td>
@@ -1194,11 +1194,17 @@ function DraftBoard() {
                         <div style={{color:'#94a3b8'}}>{p.role}</div>
                         <div style={{color:'#94a3b8',marginTop:3}}>vs: {p.competition}</div>
                       </div>
-                      {p.injury_flag && (
+                      {p.injury_flag && p.injury_flag.current !== false && (
                         <div style={{marginBottom:12,padding:'8px 10px',background:SEVERITY[p.injury_flag.severity]+'11',borderRadius:6,border:`1px solid ${SEVERITY[p.injury_flag.severity]}33`}}>
                           <div style={{color:SEVERITY[p.injury_flag.severity],fontSize:9,letterSpacing:'0.1em',marginBottom:4,fontWeight:800}}>⚠ {p.injury_flag.severity.toUpperCase()} INJURY</div>
                           <div style={{color:'#94a3b8'}}>{p.injury_flag.note}</div>
                           {p.games<17&&<div style={{color:'#f97316',marginTop:4,fontSize:11}}>Season adj: {p.games}g → {p.season} pts</div>}
+                        </div>
+                      )}
+                      {p.injury_flag && p.injury_flag.current === false && (
+                        <div style={{marginBottom:12,padding:'8px 10px',background:'#111827',borderRadius:6,border:'1px solid #1e293b'}}>
+                          <div style={{color:'#94a3b8',fontSize:9,letterSpacing:'0.1em',marginBottom:4,fontWeight:800}}>DURABILITY NOTE — NOT CURRENTLY INJURED</div>
+                          <div style={{color:'#94a3b8'}}>{p.injury_flag.note}</div>
                         </div>
                       )}
                       <div style={{marginBottom:12}}>
