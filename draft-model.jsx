@@ -7,18 +7,18 @@ import React, { useState, useMemo, useRef, useCallback } from "react";
 // ─── EV MODEL DATA (Vegas implied × target share × positional coefficients) ───
 // Vegas team implied points per game — FirstDown Studio, Aug 30 2026
 const TEAM_IMPLIED = {
-  "LA":26.6,"BUF":26.1,"DET":26.1,"CIN":26.0,"BAL":25.9,"DAL":25.7,
+  "LAR":26.6,"BUF":26.1,"DET":26.1,"CIN":26.0,"BAL":25.9,"DAL":25.7,
   "SF":25.1,"GB":24.7,"SEA":24.7,"CHI":24.6,"KC":24.1,"NE":23.8,
-  "PHI":23.8,"LAC":23.8,"JAC":23.4,"WAS":23.4,"IND":23.4,"TB":23.3,
+  "PHI":23.8,"LAC":23.8,"JAX":23.4,"WAS":23.4,"IND":23.4,"TB":23.3,
   "MIN":22.5,"HOU":22.5,"DEN":22.3,"NYG":22.1,"NO":21.5,"PIT":21.4,
   "ATL":21.1,"CAR":20.8,"TEN":20.6,"LV":19.2,"MIA":19.0,"CLE":18.7,
   "ARI":18.5,"NYJ":18.4
 };
 // Team pass attempts per game (2025 actuals, projected similar 2026)
 const TEAM_PASS_ATT = {
-  "LA":38,"BUF":36,"DET":36,"CIN":38,"BAL":34,"DAL":36,
+  "LAR":38,"BUF":36,"DET":36,"CIN":38,"BAL":34,"DAL":36,
   "SF":34,"GB":34,"SEA":28,"CHI":32,"KC":34,"NE":34,
-  "PHI":32,"LAC":36,"JAC":34,"WAS":34,"IND":34,"TB":34,
+  "PHI":32,"LAC":36,"JAX":34,"WAS":34,"IND":34,"TB":34,
   "MIN":34,"HOU":34,"DEN":32,"NYG":34,"NO":33,"PIT":30,
   "ATL":28,"CAR":30,"TEN":30,"LV":32,"MIA":30,"CLE":28,
   "ARI":38,"NYJ":32
@@ -115,6 +115,13 @@ function calcEVPPG(player) {
     if (!tpg || !cs) return null;
     const carriesPG = 27 * cs;
     return Math.round((carriesPG * 0.63 + tpg * 1.14) * 10) / 10;
+  }
+  if (pos === "QB") {
+    const v = player.vegas;
+    if (!v || v.rush_yds == null) return null;
+    const passComponent = passAtt * 0.36;
+    const rushComponent = (v.rush_yds * 0.1 + v.rush_td * 6) / 17;
+    return Math.round((passComponent + rushComponent) * 10) / 10;
   }
   return null;
 }

@@ -52,21 +52,23 @@ const { useState, useMemo, useRef } = React;
 // Vegas lines: DraftKings primary (Aug 2026). ADP from Rotoworld/FantasyEdge consensus Aug 26 2026.
 // Half-PPR: 0.1/rush_yd, 0.1/rec_yd, 0.5/rec, 6/rush_td, 6/rec_td, 25 pass yds/pt, 6/pass_td
 
-// ─── EV MODEL DATA (Vegas implied × target share × positional coefficients) ───
+// ─── EV MODEL DATA (Vegas implied volume × usage share × positional coefficients) ───
+// WR/TE/RB: team pass/rush volume × target or carry share. QB: team pass volume ×
+// pass coefficient, plus the QB's own Vegas rushing props as their usage differentiator.
 // Vegas team implied points per game — FirstDown Studio, Aug 30 2026
 const TEAM_IMPLIED = {
-  "LA":26.6,"BUF":26.1,"DET":26.1,"CIN":26.0,"BAL":25.9,"DAL":25.7,
+  "LAR":26.6,"BUF":26.1,"DET":26.1,"CIN":26.0,"BAL":25.9,"DAL":25.7,
   "SF":25.1,"GB":24.7,"SEA":24.7,"CHI":24.6,"KC":24.1,"NE":23.8,
-  "PHI":23.8,"LAC":23.8,"JAC":23.4,"WAS":23.4,"IND":23.4,"TB":23.3,
+  "PHI":23.8,"LAC":23.8,"JAX":23.4,"WAS":23.4,"IND":23.4,"TB":23.3,
   "MIN":22.5,"HOU":22.5,"DEN":22.3,"NYG":22.1,"NO":21.5,"PIT":21.4,
   "ATL":21.1,"CAR":20.8,"TEN":20.6,"LV":19.2,"MIA":19.0,"CLE":18.7,
   "ARI":18.5,"NYJ":18.4
 };
 // Team pass attempts per game (2025 actuals, projected similar 2026)
 const TEAM_PASS_ATT = {
-  "LA":38,"BUF":36,"DET":36,"CIN":38,"BAL":34,"DAL":36,
+  "LAR":38,"BUF":36,"DET":36,"CIN":38,"BAL":34,"DAL":36,
   "SF":34,"GB":34,"SEA":28,"CHI":32,"KC":34,"NE":34,
-  "PHI":32,"LAC":36,"JAC":34,"WAS":34,"IND":34,"TB":34,
+  "PHI":32,"LAC":36,"JAX":34,"WAS":34,"IND":34,"TB":34,
   "MIN":34,"HOU":34,"DEN":32,"NYG":34,"NO":33,"PIT":30,
   "ATL":28,"CAR":30,"TEN":30,"LV":32,"MIA":30,"CLE":28,
   "ARI":38,"NYJ":32
@@ -163,6 +165,16 @@ function calcEVPPG(player) {
     if (!tpg || !cs) return null;
     const carriesPG = 27 * cs;
     return Math.round((carriesPG * 0.63 + tpg * 1.14) * 10) / 10;
+  }
+  if (pos === "QB") {
+    // Starters take ~100% of team pass volume, so "share" collapses to team pass-attempt
+    // volume itself. Rushing floor comes from the QB's own Vegas rush props (already
+    // tracked per-player), the same role target/carry share plays for skill positions.
+    const v = player.vegas;
+    if (!v || v.rush_yds == null) return null;
+    const passComponent = passAtt * 0.36;
+    const rushComponent = (v.rush_yds * 0.1 + v.rush_td * 6) / 17;
+    return Math.round((passComponent + rushComponent) * 10) / 10;
   }
   return null;
 }
@@ -1401,7 +1413,7 @@ function DraftBoard() {
                           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'6px 10px',background:'#0d0d1f',borderRadius:6,border:'1px solid #3730a344',flexWrap:'wrap'}}>
                             <span style={{fontSize:9,color:'#a78bfa',fontWeight:700,letterSpacing:'0.1em'}}>EV MODEL</span>
                             <span style={{fontSize:13,fontWeight:800,color:'#a78bfa'}}>{p.evPPG} PPG</span>
-                            <span style={{fontSize:9,color:'#94a3b8'}}>Vegas implied × target share × positional coeff</span>
+                            <span style={{fontSize:9,color:'#94a3b8'}}>{p.pos==="QB"?"Vegas team pass volume × pass coeff + rush floor":"Vegas implied × target share × positional coeff"}</span>
                             <span style={{marginLeft:'auto',fontSize:11,fontWeight:700,color:p.evPPG>p.ppg?'#4ade80':p.evPPG<p.ppg?'#f87171':'#94a3b8'}}>{p.evPPG>p.ppg?`+${(p.evPPG-p.ppg).toFixed(1)} vs cons`:`${(p.evPPG-p.ppg).toFixed(1)} vs cons`}</span>
                           </div>
                         )}
