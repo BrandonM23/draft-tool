@@ -199,7 +199,7 @@ const PLAYERS = [
     injury_flag:null, role:"WR2 MIN", competition:"Justin Jefferson" },
   { name:"Kyle Monangai",       team:"CHI", pos:"RB", adp:87,
     vegas:{rush_yds:674.5,rush_td:5.5,rec:39.5,rec_yds:199.5,rec_td:1.0},
-    injury_flag:null, role:"Co-starter CHI", competition:"D'Andre Swift" },
+    injury_flag:{severity:"moderate", note:"Hyperextended knee at practice Aug 28 — 2-4wk timeline. Week 1 status in doubt."}, role:"Co-starter CHI", competition:"D'Andre Swift" },
   { name:"Chuba Hubbard",       team:"CAR", pos:"RB", adp:94,
     vegas:{rush_yds:699.5,rush_td:5.5,rec:39.5,rec_yds:199.5,rec_td:1.0},
     injury_flag:null, role:"Co-starter CAR", competition:"Jonathon Brooks" },
@@ -429,7 +429,7 @@ const PLAYERS = [
     injury_flag:null, role:"TE1 DAL", competition:"None meaningful" },
   { name:"George Kittle",       team:"SF",  pos:"TE", adp:128,
     vegas:{rec_yds:724.5,rec:59.5,rec_td:5.5},
-    injury_flag:null, role:"TE1 SF", competition:"None meaningful" },
+    injury_flag:{severity:"low", note:"Achilles — back at practice, trending toward Week 1 availability."}, role:"TE1 SF", competition:"None meaningful" },
   { name:"Isaiah Likely",       team:"NYG", pos:"TE", adp:149,
     vegas:{rec_yds:624.5,rec:54.5,rec_td:4.5},
     injury_flag:null, role:"TE1 NYG", competition:"None meaningful" },
@@ -971,7 +971,7 @@ function DraftBoard() {
         <h1 style={{fontSize:24,fontWeight:800,margin:0,background:"linear-gradient(135deg,#f8fafc,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-0.03em"}}>Draft Value Model</h1>
         <div style={{marginTop:6,fontSize:10,color:"#94a3b8"}}>PPG: Consensus projection vs ADP-implied value · Injury-adjusted</div>
         <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-          <span style={{fontSize:9,color:"#94a3b8"}}>📊 NFLFantasyEdge · Aug 24, 2026</span>
+          <span style={{fontSize:9,color:"#94a3b8"}}>📊 NFLFantasyEdge · Updated Aug 30, 2026</span>
           <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
             <label style={{display:'flex',alignItems:'center',gap:5,fontSize:10,color:'#94a3b8',fontWeight:600}}>
               DRAFT SLOT
