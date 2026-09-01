@@ -1144,14 +1144,14 @@ function DraftBoard() {
         <div style={{fontSize:11,color:"#7c3aed",letterSpacing:"0.2em",marginBottom:6,fontWeight:700}}>2026 · HALF-PPR · 6PT PASS TD · 12 TEAM</div>
         <h1 style={{fontSize:24,fontWeight:800,margin:0,background:"linear-gradient(135deg,#f8fafc,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:"-0.03em"}}>Draft Value Model</h1>
         <div style={{marginTop:6,fontSize:12,color:"#94a3b8"}}>EV PPG + Consensus PPG blended vs ADP-implied value · Injury-adjusted</div>
-        <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+        <div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
           <span style={{fontSize:10,color:"#94a3b8"}}>📊 NFLFantasyEdge · Updated Aug 30, 2026</span>
-          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
             <label style={{display:'flex',alignItems:'center',gap:5,fontSize:10,color:'#94a3b8',fontWeight:600}}>
               DRAFT SLOT
               <input type="number" min={1} max={teams} value={draftSlot} onChange={e=>setDraftSlot(Number(e.target.value))}
                 style={{width:38,background:'#0f172a',border:'1px solid #4f6380',borderRadius:4,color:'#a78bfa',padding:'4px 6px',fontSize:12,fontFamily:'inherit',textAlign:'center',fontWeight:800}} />
-              <span style={{color:'#94a3b8',fontSize:9}}>/ {teams}</span>
+              <span style={{color:'#94a3b8',fontSize:10}}>/ {teams}</span>
             </label>
             {(myPicks.size > 0 || gone.size > 0) && (
               <button onClick={()=>{setMyPicks(new Set());setGone(new Set());}} style={{background:'#1a0a0a',border:'1px solid #7f1d1d',color:'#f87171',borderRadius:6,padding:'4px 10px',fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'inherit',letterSpacing:'0.1em'}}>
