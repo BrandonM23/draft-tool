@@ -19,27 +19,30 @@
     }
     .label-icon { display: none; }
     .value-short { display: none; }
+    .team-inline { display: none; }
     @media (max-width: 679px) {
       .frozen-player { left: 80px !important; }
       .label-full { display: none !important; }
       .label-icon { display: inline !important; font-size: 12px !important; }
       .value-full { display: none !important; }
       .value-short { display: inline !important; font-size: 10px !important; }
+      .team-inline { display: inline !important; }
       .col-status { width: 80px !important; }
       .col-player { width: 88px !important; }
-      .col-team { width: 28px !important; }
-      .col-injury { width: 38px !important; }
-      .col-value { width: 48px !important; }
-      .col-ev { width: 42px !important; }
-      .col-ppg { width: 46px !important; }
+      .col-team, .cell-team { display: none !important; }
+      .col-injury { width: 44px !important; }
+      .col-value { width: 50px !important; }
+      .col-ev { width: 50px !important; }
+      .col-ppg { width: 50px !important; }
       .col-adp { width: 42px !important; }
+      .col-tier { width: 40px !important; }
       .cell-status { padding-right: 14px !important; }
       .status-btn { padding: 4px 3px !important; }
-      .cell-ppg, .cell-adp, .cell-ev { padding: 8px 3px !important; }
+      .cell-ppg, .cell-adp, .cell-ev, .cell-tier { padding: 8px 3px !important; }
       .cell-ppg span { font-size: 13px !important; }
       .ev-main { font-size: 12px !important; }
       .ev-sub { font-size: 9px !important; }
-      .cell-injury, .cell-value { padding: 8px 2px !important; }
+      .cell-injury, .cell-value { padding: 8px 4px !important; }
       table td, table th { white-space: normal !important; }
       thead th { letter-spacing: 0 !important; font-size: 9px !important; }
       thead th.cell-ev, thead th.cell-ppg, thead th.cell-adp, thead th.cell-tier { padding: 8px 3px !important; }
@@ -1275,7 +1278,7 @@ function DraftBoard() {
                 <col className="col-ev" style={{width:70}}/>
                 <col className="col-ppg" style={{width:70}}/>
                 <col className="col-adp" style={{width:65}}/>
-                <col style={{width:75}}/>
+                <col className="col-tier" style={{width:75}}/>
               </colgroup>
               <thead style={{position:"sticky",top:0,zIndex:20,background:"#0b1120"}}>
                 <tr>
@@ -1287,7 +1290,7 @@ function DraftBoard() {
                     </div>
                   </th>
                   <th className="frozen-col frozen-player" style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",position:"sticky",left:170,zIndex:30,background:"#0b1120"}}>PLAYER</th>
-                  <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TEAM</th>
+                  <th className="cell-team" style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TEAM</th>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>INJURY</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>VALUE</th>
                   <th className="cell-ev" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#a78bfa",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}><span className="label-full">EV PPG</span><span className="label-icon">EV</span></th>
@@ -1349,9 +1352,10 @@ function DraftBoard() {
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:3,marginTop:1,flexWrap:'nowrap'}}>
                         <span style={{background:posBg,color:posColor,fontSize:8,fontWeight:800,padding:'1px 4px',borderRadius:3,border:`1px solid ${posColor}44`,flexShrink:0}}>{p.pos}</span>
+                        <span className="team-inline" style={{fontSize:9,fontWeight:700,color:'#94a3b8',flexShrink:0}}>{p.team}</span>
                       </div>
                   </td>
-                  <td style={{padding:'10px',verticalAlign:'middle'}}>
+                  <td className="cell-team" style={{padding:'10px',verticalAlign:'middle'}}>
                     <span style={{fontSize:12,fontWeight:800,color:'#94a3b8'}}>{p.team}</span>
                   </td>
                   <td className="cell-injury" style={{padding:'10px',textAlign:'center',verticalAlign:'middle'}}>
@@ -1379,7 +1383,7 @@ function DraftBoard() {
                     <span style={{fontSize:15,fontWeight:800,color:posColor}}>{p.ppg}</span>
                   </td>
                   <td className="cell-adp" style={{padding:'10px',textAlign:'right',verticalAlign:'middle',fontSize:12,color:'#94a3b8',fontWeight:600,whiteSpace:'nowrap'}}>{fmtADP(p.adp)}</td>
-                  <td style={{padding:'10px',textAlign:'center',verticalAlign:'middle',fontSize:11,color:'#94a3b8',fontWeight:600,whiteSpace:'nowrap'}}>
+                  <td className="cell-tier" style={{padding:'10px',textAlign:'center',verticalAlign:'middle',fontSize:11,color:'#94a3b8',fontWeight:600,whiteSpace:'nowrap'}}>
                     {p.tierNum ? <span style={{background:'#1e293b',color:'#94a3b8',fontSize:9,fontWeight:800,padding:'2px 7px',borderRadius:10,border:'1px solid #334155',letterSpacing:'0.05em'}}>T{p.tierNum}</span> : '—'}
                   </td>
                 </tr>
