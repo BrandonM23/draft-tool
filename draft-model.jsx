@@ -829,7 +829,10 @@ function calcBlendedPPG(player, liveData) {
     ? (consensusPPG * 0.60 + evRaw * 0.40)
     : consensusPPG) * injuryMult;
   const ppg = Math.round(blended * 10) / 10;
-  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round((calcVegasPPG(player))*10)/10, consensusPPG: Math.round(consensusPPG*10)/10, evPPG: evRaw != null ? Math.round(evRaw*10)/10 : null };
+  // Display copy of EV PPG also carries the injury adjustment, so the EV column
+  // doesn't contradict the (already injury-adjusted) blended Consensus PPG next to it.
+  const evPPGDisplay = evRaw != null ? Math.round(evRaw * injuryMult * 10) / 10 : null;
+  return { ppg, season: Math.round(ppg * games * 10) / 10, games, vegasPPG: Math.round((calcVegasPPG(player))*10)/10, consensusPPG: Math.round(consensusPPG*10)/10, evPPG: evPPGDisplay };
 }
 
 function getTier(pos, ppg) {
