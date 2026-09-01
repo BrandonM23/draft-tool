@@ -18,12 +18,14 @@
       #root { zoom: 1.05; }
     }
     .label-icon { display: none; }
+    .label-icon-text { display: none; }
     .value-short { display: none; }
     .team-inline { display: none; }
     @media (max-width: 679px) {
       .frozen-player { left: 80px !important; }
       .label-full { display: none !important; }
       .label-icon { display: inline !important; font-size: 12px !important; }
+      .label-icon-text { display: inline !important; font-size: 9px !important; }
       .value-full { display: none !important; }
       .value-short { display: inline !important; font-size: 10px !important; }
       .team-inline { display: inline !important; }
@@ -39,7 +41,7 @@
       .cell-status { padding-right: 14px !important; }
       .status-btn { padding: 4px 3px !important; }
       .cell-ppg, .cell-adp, .cell-ev, .cell-tier { padding: 8px 3px !important; }
-      .cell-ppg span { font-size: 13px !important; }
+      td.cell-ppg span { font-size: 13px !important; }
       .ev-main { font-size: 12px !important; }
       .ev-sub { font-size: 9px !important; }
       .cell-injury, .cell-value { padding: 8px 4px !important; }
@@ -1293,8 +1295,8 @@ function DraftBoard() {
                   <th className="cell-team" style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TEAM</th>
                   <th style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>INJURY</th>
                   <th style={{padding:"9px 10px",textAlign:"left",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>VALUE</th>
-                  <th className="cell-ev" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#a78bfa",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}><span className="label-full">EV PPG</span><span className="label-icon">EV</span></th>
-                  <th className="cell-ppg" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}><span className="label-full">CONSENSUS PPG</span><span className="label-icon">CONS</span></th>
+                  <th className="cell-ev" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#a78bfa",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}><span className="label-full">EV PPG</span><span className="label-icon-text">EV</span></th>
+                  <th className="cell-ppg" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}><span className="label-full">CONSENSUS PPG</span><span className="label-icon-text">CONS</span></th>
                   <th className="cell-adp" style={{padding:"9px 10px",textAlign:"right",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>ADP</th>
                   <th className="cell-tier" style={{padding:"9px 10px",textAlign:"center",fontSize:10,color:"#94a3b8",letterSpacing:"0.12em",fontWeight:600,borderBottom:"1px solid #1e293b",whiteSpace:"nowrap"}}>TIER</th>
                 </tr>
