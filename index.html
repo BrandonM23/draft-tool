@@ -54,7 +54,23 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-const { useState, useMemo, useRef } = React;
+const { useState, useMemo, useRef, useEffect } = React;
+
+// Persist draft picks/favorites/gone status + draft setup across page reloads
+// (this is a static page with no backend, so localStorage is the only place
+// state can live - each browser has its own, no cross-device/cross-user sync).
+const LS_PREFIX = "draftTool_";
+function loadSet(key) {
+  try { const v = JSON.parse(localStorage.getItem(LS_PREFIX + key)); return new Set(Array.isArray(v) ? v : []); }
+  catch (e) { return new Set(); }
+}
+function loadNum(key, def) {
+  try { const v = JSON.parse(localStorage.getItem(LS_PREFIX + key)); return typeof v === "number" && !isNaN(v) ? v : def; }
+  catch (e) { return def; }
+}
+function saveValue(key, value) {
+  try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(value)); } catch (e) { /* storage unavailable - ignore */ }
+}
 
 // Vegas lines: DraftKings primary (Aug 2026). ADP from Rotoworld/FantasyEdge consensus Aug 26 2026.
 // Half-PPR: 0.1/rush_yd, 0.1/rec_yd, 0.5/rec, 6/rush_td, 6/rec_td, 25 pass yds/pt, 6/pass_td
@@ -898,7 +914,17 @@ const CONSENSUS_PPG = {
   "Kayshon Boutte":7.2,
   "J.J. McCarthy":4.5,
   "Kirk Cousins":15.8,
-  "Tyrod Taylor":14.5
+  "Tyrod Taylor":14.5,
+  // D/ST: independent quality estimate, not just the ADP curve restated -
+  // otherwise VALUE is meaningless (comparing a number to itself always reads FAIR)
+  "Broncos D/ST":10.2,"Steelers D/ST":10.0,"Eagles D/ST":9.5,"Vikings D/ST":8.4,
+  "Ravens D/ST":8.6,"Texans D/ST":8.3,"49ers D/ST":6.8,"Packers D/ST":7.6,
+  "Chiefs D/ST":6.7,"Bills D/ST":6.5,"Lions D/ST":5.6,"Jets D/ST":5.8,
+  "Cowboys D/ST":6.8,"Browns D/ST":6.6,"Chargers D/ST":6.4,"Patriots D/ST":6.3,
+  "Buccaneers D/ST":6.1,"Rams D/ST":6.0,"Seahawks D/ST":5.9,"Giants D/ST":5.7,
+  "Commanders D/ST":5.6,"Bengals D/ST":5.5,"Colts D/ST":5.4,"Cardinals D/ST":5.3,
+  "Dolphins D/ST":5.2,"Falcons D/ST":5.1,"Bears D/ST":5.0,"Panthers D/ST":4.9,
+  "Jaguars D/ST":4.8,"Raiders D/ST":4.7,"Titans D/ST":4.6,"Saints D/ST":4.5
 };
 
 // ADP-curve baseline (proxy for usage model, 25% weight)
@@ -1018,17 +1044,23 @@ function DraftBoard() {
   const [pos, setPos]           = useState("ALL");
   const [sortBy, setSortBy]     = useState("adp");
   const [expanded, setExpanded] = useState(null);
-  const [myPicks, setMyPicks]   = useState(new Set());
-  const [gone, setGone]         = useState(new Set());
-  const [watch, setWatch]       = useState(new Set());
+  const [myPicks, setMyPicks]   = useState(() => loadSet("myPicks"));
+  const [gone, setGone]         = useState(() => loadSet("gone"));
+  const [watch, setWatch]       = useState(() => loadSet("watch"));
   const [filterWatch, setFilterWatch] = useState(false);
   const [filterGone, setFilterGone] = useState(false);
   const [tab, setTab]           = useState("BOARD");
   const [clockMode, setClockMode]     = useState(false);
-  const [draftSlot, setDraftSlot]     = useState(3);
-  const [teams, setTeams]             = useState(12);
+  const [draftSlot, setDraftSlot]     = useState(() => loadNum("draftSlot", 3));
+  const [teams, setTeams]             = useState(() => loadNum("teams", 12));
   const [clockWindow, setClockWindow] = useState(12);
   const [clockPos, setClockPos]       = useState("ALL");
+
+  useEffect(() => { saveValue("myPicks", [...myPicks]); }, [myPicks]);
+  useEffect(() => { saveValue("gone", [...gone]); }, [gone]);
+  useEffect(() => { saveValue("watch", [...watch]); }, [watch]);
+  useEffect(() => { saveValue("draftSlot", draftSlot); }, [draftSlot]);
+  useEffect(() => { saveValue("teams", teams); }, [teams]);
 
   const toggleMine = (name,e) => {
     e.stopPropagation();
