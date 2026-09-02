@@ -48,6 +48,9 @@
       table td, table th { white-space: normal !important; }
       thead th { letter-spacing: 0 !important; font-size: 10.5px !important; }
       thead th.cell-ev, thead th.cell-ppg, thead th.cell-adp, thead th.cell-tier { padding: 8px 3px !important; }
+      .heat-th { width: 30px !important; min-width: 30px !important; font-size: 9px !important; letter-spacing: 0 !important; }
+      .heat-td { width: 30px !important; height: 30px !important; min-width: 30px !important; font-size: 11px !important; }
+      .heat-label { font-size: 9px !important; padding: 2px 5px !important; }
     }
   </style>
 </head>
@@ -1603,17 +1606,17 @@ function DraftBoard() {
                   <table style={{borderCollapse:"collapse"}}>
                     <thead>
                       <tr>
-                        <th style={{position:"sticky",left:0,background:"#080c14",padding:"4px 8px 6px 0",textAlign:"left"}}></th>
+                        <th style={{position:"sticky",left:0,background:"#080c14",padding:"4px 10px 8px 0",textAlign:"left"}}></th>
                         {Array.from({length:heatmapData.maxRound},(_,i)=>i+1).map(r => (
-                          <th key={r} style={{width:32,minWidth:32,padding:"4px 2px 6px",textAlign:"center",fontSize:9,color:"#94a3b8",fontWeight:700}}>{r}</th>
+                          <th key={r} className="heat-th" style={{width:44,minWidth:44,padding:"4px 2px 8px",textAlign:"center",fontSize:11,color:"#94a3b8",fontWeight:700}}>{r}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {heatmapData.positions.map(pos => (
                         <tr key={pos}>
-                          <td style={{position:"sticky",left:0,background:"#080c14",padding:"3px 8px 3px 0",textAlign:"left"}}>
-                            <span style={{background:PC_BG[pos],color:PC[pos],fontSize:9,fontWeight:800,padding:"2px 6px",borderRadius:4,border:`1px solid ${PC[pos]}44`}}>{pos}</span>
+                          <td style={{position:"sticky",left:0,background:"#080c14",padding:"4px 10px 4px 0",textAlign:"left"}}>
+                            <span className="heat-label" style={{background:PC_BG[pos],color:PC[pos],fontSize:11,fontWeight:800,padding:"3px 8px",borderRadius:4,border:`1px solid ${PC[pos]}44`}}>{pos}</span>
                           </td>
                           {Array.from({length:heatmapData.maxRound},(_,i)=>i+1).map(r => {
                             const players = heatmapData.grid[pos][r] || [];
@@ -1623,13 +1626,14 @@ function DraftBoard() {
                             const alpha = count===0 ? "00" : Math.round(28 + intensity*195).toString(16).padStart(2,"0");
                             return (
                               <td key={r}
+                                className="heat-td"
                                 onClick={()=> count>0 && setHeatCell(selected ? null : {pos, round:r})}
                                 style={{
-                                  width:32,height:32,minWidth:32,textAlign:"center",verticalAlign:"middle",
+                                  width:44,height:44,minWidth:44,textAlign:"center",verticalAlign:"middle",
                                   cursor:count>0?"pointer":"default",
                                   background: count===0 ? "#0b1120" : `${PC[pos]}${alpha}`,
                                   border: selected ? `2px solid ${PC[pos]}` : "1px solid #131c2e",
-                                  fontSize:11,fontWeight:800,
+                                  fontSize:15,fontWeight:800,
                                   color: count===0 ? "#1e293b" : (intensity>0.55 ? "#080c14" : "#f8fafc")
                                 }}>{count>0?count:""}</td>
                             );
